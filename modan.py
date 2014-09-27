@@ -88,7 +88,7 @@ class ModanGUI(wx.App):
                 if( os.access(file_path1, os.F_OK) ): file_path = file_path1
                 elif( os.access(file_path2, os.F_OK) ): file_path = file_path2
                 sql_path = file_path
-                print sql_path
+                #print sql_path
                 f = open( sql_path, 'r' )
                 #print f
                 sql = f.read()
