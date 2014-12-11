@@ -8,10 +8,12 @@ from libpy.conf import ModanConf
 LabelSize = (100,15)
  
 class MdObjectContent(wx.html.HtmlWindow):
-  def __init__(self, parent, id):
+  def __init__(self, parent, wid, frame):
     window_style = wx.html.HW_SCROLLBAR_AUTO
-    super(MdObjectContent, self).__init__(parent, id, 
+    super(MdObjectContent, self).__init__(parent, wid,
                                               style=window_style)
+    self.frame = frame
+    self.app = wx.GetApp()
     mdconf = ModanConf()
     self.conf = mdconf.item
     if 'gtk2' in wx.PlatformInfo:
@@ -20,7 +22,7 @@ class MdObjectContent(wx.html.HtmlWindow):
   def SetObjectContent(self, mdobject):
     self.mdobject = mdobject
     #colspan = mdobject
-    lmcount = len(mdobject.landmarks)
+    lmcount = len(mdobject.landmark_list)
     csize = mdobject.get_centroid_size()
 
     rv = "<TABLE><TR><TD BGCOLOR='blue'>"
@@ -33,11 +35,8 @@ class MdObjectContent(wx.html.HtmlWindow):
     if( csize > 0 ):
       rv += ", Centroid size: " + str( int( csize * 100 ) / 100.0 )
     rv += "</TD></TR>"
-    for lm in mdobject.landmarks:
-      rv+= "<TR><TH>"+str(lm.lmseq)+"</TH><TD>"+str(lm.xcoord)+"</TD><TD>"+str(lm.ycoord)+"</TD>"
-      if( lm.zcoord > -99999 ):
-        rv+= "<TD>" + str( lm.zcoord ) + "</TD>"
-      rv+= "</TR>"
+    for lm in mdobject.landmark_list:
+      rv+= "<TR><TD>"+ "</TD><TD>".join( [ str(n) for n in lm.coords ] ) + "</TD></TR>"
     rv+= "<tr><td colspan=4>&nbsp;</td></tr>" 
     #mdobject.bookstein_registration( 1, 2, 3 )
     #mdobject.print_landmarks("bookstein")

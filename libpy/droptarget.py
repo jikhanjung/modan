@@ -9,7 +9,7 @@ class MdDropTarget(wx.TextDropTarget):
   def OnDropText( self, x, y, text ):
     ''' not used anymore'''
     #print "ondroptext"
-    rv = self.win.DropObject( x, y, text )
+    rv = self.win.drop_object( x, y, text )
     return rv
   def OnData(self, x, y, default_val ):
     getdata = self.GetData()
@@ -18,7 +18,7 @@ class MdDropTarget(wx.TextDropTarget):
     #print data
     #print "ondata", default_val
     #print default_val
-    rv = self.win.DropObject( x, y, data, default_val )
+    rv = self.win.drop_object( x, y, data, default_val )
     #print rv
     #print wx.DragError, wx.DragNone, wx.DragCopy, wx.DragMove, wx.DragLink, wx.DragCancel
     return rv

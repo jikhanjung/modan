@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import wx
 from wx.lib.plot import *
 import math
@@ -305,10 +307,10 @@ class ModanDatasetViewer( wx.Dialog ):
     self.checkboxSizer.Add( self.chkShowMeanshape, wx.EXPAND  )
     
     self.testButton = wx.Button(panel, ID_ANALYZE_BUTTON, 'Analyze')
-    self.testButton2 = wx.Button(panel, -1, 'test2')
+    self.testButton2 = wx.Button(panel, -1, 'CVA')
     self.copyButton = wx.Button(panel, -1, 'Copy')
     self.Bind(wx.EVT_BUTTON, self.OnAnalyze, id=ID_ANALYZE_BUTTON)
-    self.Bind(wx.EVT_BUTTON, self.OnTest, self.testButton2 )
+    self.Bind(wx.EVT_BUTTON, self.OnCVA, self.cvaButton)
     self.Bind(wx.EVT_BUTTON, self.OnCopy, self.copyButton)
 
     radioList = [ "Bookstein", "SBR", "Procrustes (GLS)", "Resistant fit" ]
@@ -356,7 +358,7 @@ class ModanDatasetViewer( wx.Dialog ):
     self.canvasOptionSizer.Add( self.rdSuperimposition, pos=(1,1), flag=wx.EXPAND )
     self.canvasOptionSizer.Add( self.object_listctrl, pos=(0,2), flag=wx.EXPAND)
     self.canvasOptionSizer.Add( self.testButton, pos=(2,0), flag=wx.EXPAND)
-    self.canvasOptionSizer.Add( self.testButton2, pos=(2,1), flag=wx.EXPAND)
+    self.canvasOptionSizer.Add( self.cvaButton, pos=(2,1), flag=wx.EXPAND)
     self.canvasOptionSizer.Add( self.copyButton, pos=(2,2), flag=wx.EXPAND)
     #self.canvasOptionSizer.Add( self.rdGroupInfo, pos=(1,2), span=(4,1),flag=wx.EXPAND)
     self.canvasOptionSizer.Add( self.groupLabelSizer, pos=(1,3), flag=wx.EXPAND)
@@ -643,7 +645,7 @@ class ModanDatasetViewer( wx.Dialog ):
       self.loading_listctrl_initialized = True
     
       #print self.pca.loading
-      for i in range( self.cva.nObservation ):
+      for i in range( self.cva.nVariable):
         list = []
         #list[:] = self.pca.loading[i]
         for j in range( self.cva.nVariable ):
@@ -756,7 +758,7 @@ class ModanDatasetViewer( wx.Dialog ):
       wx.TheClipboard.Close() 
 
 
-  def OnTest(self,event):
+  def OnCVA(self,event):
       self.PerformCVA()
       self.VisualizeCVAResult()
       
@@ -972,15 +974,14 @@ class ModanDatasetViewer( wx.Dialog ):
         if not self.group_symbols.has_key( groupinfo):
           self.group_symbols[groupinfo] = 0
         self.group_symbols[groupinfo] += 1 
-    i = 0
     symbol_list = [ 'circle', 'square', 'triangle', 'triangle_down', 'cross', 'plus' ]
-    color_list = [ 'blue', 'green', 'yellow', 'red', 'grey', 'black' ]
+    color_list = [ 'blue', 'green', 'yellow', 'red', 'grey' ]#, 'black' ]
 
-    #print groupname
+    i = 0
     for key in self.group_symbols.keys():
-      self.group_colors[key] = color_list[i]
-      self.group_symbols[key] = symbol_list[i]
-      self.groupLabel[i].SetLabel( key + ":" + color_list[i] + " " + symbol_list[i] )
+      self.group_colors[key] = color_list[i%len(color_list)]
+      self.group_symbols[key] = symbol_list[i%len(symbol_list)]
+      self.groupLabel[i].SetLabel( key + ":" + color_list[i%len(color_list)] + " " + symbol_list[i%len(symbol_list)] )
       #print i, key
       i+= 1
     for i in range(i,10):

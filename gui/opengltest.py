@@ -83,7 +83,7 @@ class MdCanvasBase( glcanvas.GLCanvas ):
     self.last_yangle = 0
     self.is_dragging = False
     self.size = None
-    self.object = None
+    self.mdobject = None
     self.dataset = None
     #self.color_scheme = None
     self.init_control = False
@@ -594,10 +594,10 @@ class MdCanvas(MdCanvasBase):
       #print "DrawWire"
       #return
     
-    lm1 = self.object.landmarks[vfrom - 1]
-    lm2 = self.object.landmarks[vto - 1]
+    lm1 = self.mdobject.landmark_list[vfrom - 1]
+    lm2 = self.mdobject.landmark_list[vto - 1]
     axis_start = [0, 0, 1]
-    axis_end = [lm1.xcoord - lm2.xcoord, lm1.ycoord - lm2.ycoord, lm1.zcoord - lm2.zcoord]
+    axis_end = [lm1.coords[0]- lm2.coords[0], lm1.coords[1]- lm2.coords[1], lm1.coords[2] - lm2.coords[2]]
     angle = math.acos(axis_start[0] * axis_end[0] + axis_start[1] * axis_end[1] + axis_start[2] * axis_end[2] / ((axis_start[0] ** 2 + axis_start[1] ** 2 + axis_start[2] ** 2) ** 0.5 * (axis_end[0] ** 2 + axis_end[1] ** 2 + axis_end[2] ** 2) ** 0.5))
     angle = angle * (180 / math.pi)
     axis_rotation = [0, 0, 0]
@@ -615,7 +615,7 @@ class MdCanvas(MdCanvasBase):
     #glTranslate(0, 0, self.offset)
     #glRotatef(yangle, 1.0, 0.0, 0.0)
     #glRotatef(xangle, 0.0, 1.0, 0.0)
-    glTranslate(lm2.xcoord, lm2.ycoord, lm2.zcoord)
+    glTranslate(lm2.coords[0], lm2.coords[1], lm2.coords[2])
     if (angle != 0):
       glRotate(angle, axis_rotation[0], axis_rotation[1], axis_rotation[2])
     if nameidx > 0:
@@ -624,11 +624,11 @@ class MdCanvas(MdCanvasBase):
     glPopMatrix()
 
   def SelectLandmark(self,idx_list):
-    for i in range( len( self.object.landmarks ) ):
+    for i in range( len( self.mdobject.landmark_list ) ):
       if i in idx_list :
-        self.object.landmarks[i].selected = True
+        self.mdobject.landmark_list[i].selected = True
       else:
-        self.object.landmarks[i].selected = False
+        self.mdobject.landmark_list[i].selected = False
     #print "selected idx :", idx_list
     self.Refresh(False)
 
@@ -665,7 +665,7 @@ class MdCanvas(MdCanvasBase):
       glDisable(GL_LIGHTING)
       glBegin( GL_POINTS )
     i = 1
-    for lm in object.landmarks:
+    for lm in object.landmark_list:
       if lm.selected:
         glColor3f( self.color.selected_landmark[0], self.color.selected_landmark[1], self.color.selected_landmark[2] )
       elif i == self.begin_wire_idx or i == self.end_wire_idx:
@@ -679,14 +679,14 @@ class MdCanvas(MdCanvasBase):
 
       if single_object_mode:
         glPushMatrix()
-        glTranslate(lm.xcoord, lm.ycoord, lm.zcoord)
+        glTranslate(lm.coords[0], lm.coords[1], lm.coords[2])
         if self.render_mode == GL_SELECT:
           glLoadName( i )
         i += 1
         glutSolidSphere( size, 20, 20 )        #glutSolidCube( size )
         glPopMatrix()
       else:
-        glVertex3f( lm.xcoord, lm.ycoord, lm.zcoord )
+        glVertex3f( lm.coords[0], lm.coords[1], lm.coords[2])
             
     if not single_object_mode:
       #print "glend"
@@ -702,9 +702,9 @@ class MdCanvas(MdCanvasBase):
         #print "i=",i
         idx = self.GetParent().GetParent().baseline_points[i]
         #print "idx=",idx
-        lm = object.landmarks[idx-1]
+        lm = object.landmark_list[idx-1]
         #print basestr[i]
-        glRasterPos3f(lm.xcoord-size*(len(basestr[i])/2),lm.ycoord - size*2.4,lm.zcoord)
+        glRasterPos3f(lm.coords[0]-size*(len(basestr[i])/2),lm.coords[1] - size*2.4,lm.coords[2])
         for letter in list( basestr[i] ):
           glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12,ord(letter))
       glEnable(GL_LIGHTING)
@@ -713,9 +713,9 @@ class MdCanvas(MdCanvasBase):
       i = 0
       glDisable(GL_LIGHTING)
       glColor3f(.5,.5,1.0)
-      for lm in object.landmarks:
+      for lm in object.landmark_list:
         i+= 1
-        glRasterPos3f(lm.xcoord,lm.ycoord + size*1.2,lm.zcoord)
+        glRasterPos3f(lm.coords[0],lm.coords[1]+ size*1.2,lm.coords[2])
         for letter in list( str( i ) ):
           #print ord(letter)
           glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12,int(ord(letter)))
@@ -786,12 +786,12 @@ class MdCanvas(MdCanvasBase):
     x_angle = self.last_xangle
     self.last_xangle = 0
     x_angle = -1.0 * ( x_angle * math.pi ) /180 
-    self.object.rotate_3d( x_angle, 'Y')
+    self.mdobject.rotate_3d( x_angle, 'Y')
     if self.dataset != None:
       for mo in self.dataset.objects:
         mo.rotate_3d( x_angle, 'Y' )
     y_angle = ( y_angle * math.pi ) /180 
-    self.object.rotate_3d( y_angle, 'X')
+    self.mdobject.rotate_3d( y_angle, 'X')
     if self.dataset != None:
       for mo in self.dataset.objects:
         mo.rotate_3d( y_angle, 'X' )
@@ -804,7 +804,7 @@ class MdCanvas(MdCanvasBase):
     #begin_time = clock()
     #print "begin draw", clock()
     #print 1/0
-    if self.object == None:
+    if self.mdobject == None:
       self.SwapBuffers()
       return
 
@@ -848,9 +848,9 @@ class MdCanvas(MdCanvasBase):
     #print "draw single object", dataset_end
     """ Draw object: """
     if ( self.dataset != None and self.show_meanshape ) :
-      self.DrawObject( self.object, xangle, yangle, self.lm_radius * 2, color=self.color.meanshape, show_index = self.show_index )
+      self.DrawObject( self.mdobject, xangle, yangle, self.lm_radius * 2, color=self.color.meanshape, show_index = self.show_index )
     elif self.dataset == None :
-      self.DrawObject( self.object, xangle, yangle, self.lm_radius * 2, color=self.color.object, show_index = self.show_index )
+      self.DrawObject( self.mdobject, xangle, yangle, self.lm_radius * 2, color=self.color.object, show_index = self.show_index )
 
     #print "draw wireframe if visible", clock()
     if ( self.dataset != None and self.show_meanshape and self.show_wireframe ) or ( self.dataset == None and self.show_wireframe ):
@@ -870,7 +870,7 @@ class MdCanvas(MdCanvasBase):
         #print vertices
         vfrom = int( vertices[0] )
         vto = int( vertices[1] )
-        if vfrom > len( self.object.landmarks ) or vto > len( self.object.landmarks ):
+        if vfrom > len( self.mdobject.landmark_list ) or vto > len( self.mdobject.landmark_list ):
           #print "out of bound"
           continue 
         #if self.print_log:
@@ -924,14 +924,14 @@ class MdCanvas(MdCanvasBase):
     #sleep_time = 2
     #print "1"
     #sleep( sleep_time )
-    self.object = mo
-    if len( mo.landmarks ) > 0 :
-      self.AdjustPerspective( self.object )
+    self.mdobject = mo
+    if len( mo.landmark_list ) > 0 :
+      self.AdjustPerspective( self.mdobject )
     #print "2"
     #sleep( sleep_time )
 #    wx.MessageBox( "after adjust perspective" )
     #self.SetSize( self.GetClientSize() )
-    for lm in mo.landmarks:
+    for lm in mo.landmark_list:
       lm.selected = False
     #wx.MessageBox( "before on draw" )
     #print "3"
@@ -964,11 +964,11 @@ class MdCanvas(MdCanvasBase):
       self.init = True
     #max_x, max_y, max_z, min_x, min_y, min_z = -999,-999,-999,999,999,999
     max_dist = 0
-    for i in range( len( mo.landmarks ) ):
-      for j in range(i+1,len(mo.landmarks)):
-        dist = math.sqrt( ( mo.landmarks[i].xcoord - mo.landmarks[j].xcoord ) ** 2 +
-                          ( mo.landmarks[i].ycoord - mo.landmarks[j].ycoord ) ** 2 +
-                          ( mo.landmarks[i].zcoord - mo.landmarks[j].zcoord ) ** 2   )
+    for i in range( len( mo.landmark_list ) ):
+      for j in range(i+1,len(mo.landmark_list)):
+        dist = math.sqrt( ( mo.landmark_list[i].coords[0] - mo.landmark_list[j].coords[0] ) ** 2 +
+                          ( mo.landmark_list[i].coords[1] - mo.landmark_list[j].coords[1] ) ** 2 +
+                          ( mo.landmark_list[i].coords[2] - mo.landmark_list[j].coords[2] ) ** 2   )
         max_dist = max( dist, max_dist )
     """      max_x = max( lm.xcoord, max_x )
       max_y = max( lm.ycoord, max_y )
@@ -994,7 +994,7 @@ class MdCanvas(MdCanvasBase):
     #print "max dist", max_dist
     #print "offset", self.offset
     #self.offset = -3 #max_diff * -2
-    self.lm_radius = max_dist / ( 4 * min( 50, len( mo.landmarks ) ) )
+    self.lm_radius = max_dist / ( 4 * min( 50, len( mo.landmark_list ) ) )
     #print "radius:", self.lm_radius, "max_dist:", max_dist
     self.wire_radius = self.lm_radius / 2
 
@@ -1048,7 +1048,7 @@ class OpenGLTestWin( wx.Dialog ):
   def SetDataset(self, ds ):
     self.control.SetDataset(  ds )
     for mo in ds.objects:
-      for lm in mo.landmarks:
+      for lm in mo.landmark_list:
         lm.selected = False
         
     #self.SetSize((400,400))
