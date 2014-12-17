@@ -17,7 +17,7 @@ class MdManova:
     self.groupinfo_idx = 0
     self.group_list = {}
     i = 0
-    for object in self.data.dataset.objects:
+    for object in self.data.dataset.object_list:
       group_key = object.group_list[self.groupinfo_idx]
       print group_key
       if( not self.group_list.has_key(group_key) ):
@@ -141,7 +141,7 @@ class MdAnova:
     self.groupinfo_idx = 0
     self.group_list = {}
     i = 0
-    for object in self.data.dataset.objects:
+    for object in self.data.dataset.object_list:
       group_key = object.group_list[self.groupinfo_idx]
       print group_key
       if( not self.group_list.has_key(group_key) ):
@@ -598,12 +598,12 @@ class MdPrincipalComponent:
     self.loading = w
     
     self.new_dataset = self.data.dataset.copy()
-    self.new_dataset.objects = []
+    self.new_dataset.object_list = []
     for i in range( self.data.nObservation ):
       object = MdObject()
-      object.objname = self.data.dataset.objects[i].objname
+      object.objname = self.data.dataset.object_list[i].objname
       object.coords = self.rotated_matrix[...,i]
-      object.group_list[:] = self.data.dataset.objects[i].group_list[:]
-      self.new_dataset.objects.append( object )
+      object.group_list[:] = self.data.dataset.object_list[i].group_list[:]
+      self.new_dataset.object_list.append( object )
       #if( i == 2 ) : print object.coords
   

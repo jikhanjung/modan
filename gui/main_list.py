@@ -85,8 +85,8 @@ class MdObjectList(NiftyVirtualList):
         self.DeleteAllColumns()
         self.SetSort(lambda x, y: cmp(x.id, y.id))  # default sorting
 
-        groupname_list = []  #self.dataset.groupname_list
-        number_of_group = len(groupname_list)
+        propertyname_list = self.dataset.propertyname_list
+        number_of_group = len(propertyname_list)
 
         self.colsortfunc = []
         self.colsort = []
@@ -95,11 +95,11 @@ class MdObjectList(NiftyVirtualList):
         columnheader = ['Name', 'LM', 'Csize']
         columnwidth = [100, 40, 60]
         self.colsortfunc[0] = [lambda x, y: cmp(x.objname, y.objname),
-                               lambda x, y: cmp(len(x.landmarks), len(y.landmarks)),
+                               lambda x, y: cmp(len(x.landmark_list), len(y.landmark_list)),
                                lambda x, y: cmp(x.get_centroid_size(), y.get_centroid_size())
         ]
         self.colsortfunc[1] = [lambda y, x: cmp(x.objname, y.objname),
-                               lambda y, x: cmp(len(x.landmarks), len(y.landmarks)),
+                               lambda y, x: cmp(len(x.landmark_list), len(y.landmark_list)),
                                lambda y, x: cmp(x.get_centroid_size(), y.get_centroid_size())
         ]
         #if self.dataset.dimension == 2:
@@ -134,8 +134,8 @@ class MdObjectList(NiftyVirtualList):
         f[1].append(lambda y, x: cmp(x.group8, y.group8))
         f[1].append(lambda y, x: cmp(x.group9, y.group9))
         f[1].append(lambda y, x: cmp(x.group10, y.group10))
-        for name in groupname_list:
-            columnheader.append(name)
+        for p in propertyname_list:
+            columnheader.append(p.propertyname)
             columnwidth.append(100)
             self.colsort.append(0)
             #print i, len( self.colsortfunc[0] )
@@ -171,8 +171,16 @@ class MdObjectList(NiftyVirtualList):
             #i+= 1
 
             #print mdobject.group_list
-            for j in range(len(groupname_list)):
-                item.SetText(mdobject.group_list[j], i + j)
+
+            for p in mdobject.property_list:
+                pn_id = p.propertyname_id
+                for j in range(len(mdobject.dataset.propertyname_list)):
+                    if pn_id == mdobject.dataset.propertyname_list[j].id:
+                        print i, j
+                        item.SetText(p.property, i + j)
+
+            #for j in range(len(mdobject.property_list)):
+                #item.SetText(mdobject.property_list[j].property, i + j)
                 #i += 1
                 #print "item id: ",
                 #print item.GetData()
@@ -267,32 +275,46 @@ class MdObjectList(NiftyVirtualList):
         #print "group", event
         item = self.group_menu.FindItemById(id)
         label = item.GetLabel()
-        groupInfoDlg = GroupInfoDlg(self, -1, label)
-        res = groupInfoDlg.ShowModal()
+        propertyDlg = propertyInputDlg(self, -1, label)
+        res = propertyDlg.ShowModal()
         if res == wx.ID_OK:
-            groupval = groupInfoDlg.GetValue()
+            property_value = propertyDlg.GetValue()
         else:
             return
             #print groupval
             #print self.pixels_per_millimeter, "pixels in 1 mm"
-        groupInfoDlg.Destroy()
+        propertyDlg.Destroy()
         name_list = ", ".join([o.objname for o in self.selected_object_list])
         #print name_list + " all belong to " + groupval + " " + label
 
         found = False
-        groupname_idx = -1
-        for i in range(len(self.dataset.groupname_list)):
-            if self.dataset.groupname_list[i] == label:
+        propertyname_id = -1
+        for i in range(len(self.dataset.propertyname_list)):
+            if self.dataset.propertyname_list[i].propertyname == label:
                 found = True
-                groupname_idx = i
+                propertyname_id = self.dataset.propertyname_list[i].id
 
         if found:
             wx.BeginBusyCursor()
-            for object in self.selected_object_list:
+            session = self.app.get_session()
+            for mdobject in self.selected_object_list:
+                print mdobject, mdobject.id
+                session.add(mdobject)
+                print mdobject, mdobject.id
+                print "prop_list 1", [ [ p.id, p.propertyname_id, p.object_id ] for p in mdobject.property_list ]
+                for p in mdobject.property_list:
+                    if p.propertyname_id == propertyname_id:
+                        session.delete(p)
+                        #mdobject.property_list.remove(p)
                 #print object
                 #print object.id
-                object.group_list[groupname_idx] = groupval
-                object.update()
+                mdproperty = MdProperty(property_value)
+                mdproperty.object_id = mdobject.id
+                mdproperty.propertyname_id = propertyname_id
+                mdobject.property_list.append( mdproperty )
+                print mdproperty, mdproperty.object_id, mdproperty.propertyname_id, mdproperty.property
+                print "prop_list 2", [ [ p.id, p.object_id ] for p in mdobject.property_list ]
+            session.commit()
             self.RefreshList()
             wx.EndBusyCursor()
 
@@ -330,18 +352,19 @@ class MdObjectList(NiftyVirtualList):
                                    "Do you really want to delete " + str(len(self.selected_object_list)) + " objects?",
                                    "Warning", wx.YES_NO | wx.NO_DEFAULT | wx.CENTRE | wx.ICON_EXCLAMATION)
         result = msg_box.ShowModal()
+        session = self.app.get_session()
         if ( result == wx.ID_YES ):
 
             wx.BeginBusyCursor()
-            for object in self.selected_object_list:
+            for mdobject in self.selected_object_list:
+                session.add(mdobject)
+                for p in mdobject.property_list:
+                    session.delete( p )
+                session.delete(mdobject)
                 #print object
                 #print object.id
                 #self.remove_by_mdobject_id(object.id)
-                object.delete()
-            self.dataset.load_objects()
-            for o in self.dataset.objects:
-                o.load_landmarks()
-            self.SetObjectList(self.dataset.objects)
+            session.commit()
             self.RefreshList()
             wx.EndBusyCursor()
         return
@@ -377,7 +400,7 @@ class MdObjectList(NiftyVirtualList):
         for prop in self.dataset.propertyname_list:
             i = m2.Append(wx.NewId(), prop.propertyname )
             self.Bind(wx.EVT_MENU, self.OnGroup, i)
-        m.AppendMenu(wx.NewId(), 'Set group info', m2)
+        m.AppendMenu(wx.NewId(), 'Set property', m2)
 
         self.PopupMenu(m, event_point)
         return
@@ -386,11 +409,11 @@ class MdObjectList(NiftyVirtualList):
         #self.PopupMenu( m, event_point )
 
 
-class GroupInfoDlg(wx.Dialog):
+class propertyInputDlg(wx.Dialog):
     def __init__(self, parent, id, group_name):
-        wx.Dialog.__init__(self, parent, id, 'Enter group information', size=(320, 180))
+        wx.Dialog.__init__(self, parent, id, 'Set property', size=(320, 180))
         self.panel = panel = wx.Panel(self, -1)
-        self.maintext = wx.StaticText(panel, -1, 'Enter ' + group_name.lower() + ":", style=wx.ALIGN_LEFT)
+        self.maintext = wx.StaticText(panel, -1, 'Set ' + group_name.lower() + " as:", style=wx.ALIGN_LEFT)
         self.groupinfo = wx.TextCtrl(panel, -1, '')
 
         self.okButton = wx.Button(panel, -1, 'OK')

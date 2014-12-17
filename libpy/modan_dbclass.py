@@ -29,6 +29,7 @@ class MdObject(Base):
     modified_at = Column(DateTime)
     image = relationship("MdImage", order_by="MdImage.id", backref="mdobject")
     centroid_size = -1
+    property_list = relationship("MdProperty", order_by="MdProperty.id", backref="mdobject")
 
     landmark_list = []
     has_image = False
@@ -259,6 +260,17 @@ class MdObject(Base):
             if ( zdiff < 0 ):
                 theta = theta * -1
             self.rotate_3d(-1 * theta, 'X')
+    def copy(self):
+        rv = MdObject()
+        rv.id = self.id
+        rv.objname = self.objname
+        rv.objdesc = self.objdesc
+        rv.scale = self.scale
+        rv.landmark_str = self.landmark_str
+        rv.dataset_id = self.dataset_id
+        rv.created_at = self.created_at
+        rv.unpack_landmark()
+        return rv
 
 dataset_propertyname = Table('dataset_propertyname', Base.metadata,
     Column('dataset_id',Integer,ForeignKey('mddataset.id')),
@@ -278,17 +290,129 @@ class MdDataset(Base):
     modified_at = Column(DateTime)
     object_list = relationship("MdObject", order_by="MdObject.id", backref="dataset")
     propertyname_list = relationship( "MdPropertyName", secondary=dataset_propertyname, backref='dataset_list' )
+    edge_list = []
+    baseline_point_list = []
 
-    @classmethod
-    def find_all(cls):
-        dataset_list = []
-        return dataset_list
+    def pack_wireframe(self, edge_list = []):
+        if edge_list == []:
+            edge_list = self.edge_list
 
+        for points in edge_list:
+            points.sort( key = int )
+        edge_list.sort()
+
+        new_edges = []
+        for points in edge_list:
+            #print points
+            if len( points ) != 2:
+                continue
+            new_edges.append( "-".join( [ str(x) for x in points ] ) )
+        self.wireframe = ",".join( new_edges )
+        return self.wireframe
+
+    def unpack_wireframe(self, wireframe = ''):
+        if wireframe == '' and self.wireframe != '' :
+            wireframe = self.wireframe
+
+        self.edge_list = []
+        if wireframe == '':
+            return []
+
+        #print wireframe
+        for edge in wireframe.split( "," ):
+            has_edge = True
+            if edge != '':
+                #print edge
+                verts = edge.split( "-" )
+                int_edge = []
+                for v in verts:
+                    try:
+                        v = int(v)
+                    except:
+                        has_edge = False
+                        #print "Invalid landmark number [", v, "] in wireframe:", edge
+                    int_edge.append( v )
+
+                if has_edge:
+                    if len( int_edge ) != 2:
+                        pass #print "Invalid edge in wireframe:", edge
+                    self.edge_list.append( int_edge )
+
+        return self.edge_list
+    def pack_polygons(self, polygon_list = []):
+        #print polygon_list
+        if polygon_list == []:
+            polygon_list = self.polygon_list
+        for polygon in polygon_list:
+            # print polygon
+            polygon.sort( key = int )
+        polygon_list.sort()
+
+        new_polygons = []
+        for polygon in polygon_list:
+            #print points
+            new_polygons.append( "-".join( [ str(x) for x in polygon ] ) )
+        self.polygons = ",".join( new_polygons )
+        return self.polygons
+
+    def unpack_polygons(self, polygons = ''):
+        if polygons == '' and self.polygons != '' :
+            polygons = self.polygons
+
+        self.polygon_list = []
+        if polygons == '':
+            return []
+
+        for polygon in polygons.split( "," ):
+            if polygon != '':
+                self.polygon_list.append( [ (int(x)) for x in polygon.split( "-" )]  )
+
+        return self.polygon_list
+
+    def get_edge_list(self):
+        return self.edge_list
+
+    def pack_baseline(self, baseline_point_list = []):
+        if len( baseline_point_list ) == 0 and len( self.baseline_point_list ) > 0:
+            baseline_point_list = self.baseline_point_list
+        #print baseline_points
+        self.baseline = ",".join( [ str(x) for x in baseline_point_list ] )
+        #print self.baseline
+        return self.baseline
+
+    def unpack_baseline( self, baseline = '' ):
+        if baseline == '' and self.baseline != '':
+            baseline = self.baseline
+
+        self.baseline_point_list = []
+        if self.baseline == '':
+            return []
+
+        self.baseline_point_list = [ (int(x)) for x in self.baseline.split(",") ]
+        return self.baseline_point_list
+
+    def get_baseline_points( self ):
+        return self.baseline_point_list
 
 class MdPropertyName(Base):
     __tablename__ = 'mdpropertyname'
     id = Column(Integer, primary_key=True)
     propertyname = Column(String,default='')
+    def __init__(self,name):
+        self.propertyname = name
+
+class MdProperty(Base):
+    __tablename__ = 'mdproperty'
+    id = Column(Integer, primary_key=True)
+    object_id = Column(Integer, ForeignKey("mdobject.id"), nullable=False)
+    propertyname_id = Column(Integer, ForeignKey("mdpropertyname.id"), nullable=False)
+    property = Column(String,default='')
+    def __init__(self,property,mdobject=None,propertyname=None):
+        if mdobject:
+            self.object_id = mdobject.id
+        if propertyname:
+            self.propertyname_id = propertyname.id
+        self.property = property
 
 class MdImage(Base):
     __tablename__ = 'mdimage'

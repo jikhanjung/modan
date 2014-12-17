@@ -633,19 +633,19 @@ class MdCanvas(MdCanvasBase):
     self.Refresh(False)
 
   def SelectObject(self,idx_list):
-    for i in range( len( self.dataset.objects ) ):
+    for i in range( len( self.dataset.object_list ) ):
       if i in idx_list :
-        self.dataset.objects[i].selected = True
+        self.dataset.object_list[i].selected = True
       else:
-        self.dataset.objects[i].selected = False
-      #print self.dataset.objects[i].selected
+        self.dataset.object_list[i].selected = False
+      #print self.dataset.object_list[i].selected
     self.Refresh(False)
 
   def ToggleObjectVisibility(self, idx):
-    if self.dataset.objects[idx].visible:
-      self.dataset.objects[idx].visible = False 
+    if self.dataset.object_list[idx].visible:
+      self.dataset.object_list[idx].visible = False
     else:
-      self.dataset.objects[idx].visible = True
+      self.dataset.object_list[idx].visible = True
 
   def DrawObject(self, object, xangle, yangle, size = 0.1, color = ( 1.0, 1.0, 0.0 ), show_index = False, single_object_mode = True ):
     single_object_mode = False
@@ -788,12 +788,12 @@ class MdCanvas(MdCanvasBase):
     x_angle = -1.0 * ( x_angle * math.pi ) /180 
     self.mdobject.rotate_3d( x_angle, 'Y')
     if self.dataset != None:
-      for mo in self.dataset.objects:
+      for mo in self.dataset.object_list:
         mo.rotate_3d( x_angle, 'Y' )
     y_angle = ( y_angle * math.pi ) /180 
     self.mdobject.rotate_3d( y_angle, 'X')
     if self.dataset != None:
-      for mo in self.dataset.objects:
+      for mo in self.dataset.object_list:
         mo.rotate_3d( y_angle, 'X' )
 
   def OnDraw(self):
@@ -830,12 +830,12 @@ class MdCanvas(MdCanvasBase):
     glRotatef(xangle, 0.0, 1.0, 0.0)
     #print self.Size.width
     
-    if self.dataset != None and self.dataset.objects != None:
-      if len( self.dataset.objects ) > 20:
+    if self.dataset != None and (self.dataset.object_list )>0:
+      if len( self.dataset.object_list ) > 20:
         somode = False
       else:
         somode = True
-      for mo in self.dataset.objects:
+      for mo in self.dataset.object_list:
         if mo.visible == False:
           continue
         if mo.selected:
@@ -918,7 +918,7 @@ class MdCanvas(MdCanvasBase):
 
   def SetSingleObject(self, mo ):
     #if self.print_log:
-      #print "SetSingleObject"
+    print "SetSingleObject", "with", len( mo.landmark_list), "landmarks"
     #mo.move_to_center()
     #wx.MessageBox( "before adjust perspective" )
     #sleep_time = 2
@@ -1047,7 +1047,7 @@ class OpenGLTestWin( wx.Dialog ):
     
   def SetDataset(self, ds ):
     self.control.SetDataset(  ds )
-    for mo in ds.objects:
+    for mo in ds.object_list:
       for lm in mo.landmark_list:
         lm.selected = False
         

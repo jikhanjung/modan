@@ -1067,7 +1067,6 @@ class ModanObjectDialog(wx.Dialog):
 
         self.landmark_list = []
         self.mdobject = MdObject()
-        self.mdobject.landmark_list = self.landmark_list
         self.baseline_points = []
         self.edge_list = []
         self.show_index = False
@@ -1599,7 +1598,7 @@ class ModanObjectDialog(wx.Dialog):
         #mo = self.object.copy()
         #mo.move_to_center()
         if mdobject.dataset.dimension == 3:
-            self.ThreeDViewer.SetSingleObject(mdobject)
+            self.ThreeDViewer.SetSingleObject(mdobject.copy())
         #if self.auto_rotate:
             #self.RefreshThreeDViewer()
             #self.ThreeDViewer.BeginAutoRotate(50)
@@ -1820,15 +1819,11 @@ class ModanObjectDialog(wx.Dialog):
 
         #self.forms['landmark_list'].Append( ['a', 'b', 'c', 'd', 'e'] )
 
-    def AddLandmark(self, event):
-        #self.AppendLandmark(
-        #self.forms['landmark_list'].Append( [self.forms['landmark_list'].GetItemCount() + 1, 2, 3, 4] )
-        pass
-
     def AddCoord(self, event):
         lm = [self.forms['xcoord'].GetValue(),self.forms['ycoord'].GetValue()]
         if self.dimension == 3:
             lm.append(self.forms['zcoord'].GetValue())
+        print lm
         self.AppendLandmark(MdLandmark(lm))
         #self.forms['landmark_list'].Append( [idx, x, y, z] )
         self.forms['xcoord'].SetValue('')
@@ -1868,8 +1863,13 @@ class ModanObjectDialog(wx.Dialog):
             #  self.forms['landmark_list'].Append( [title, uri] )
 
     def RefreshThreeDViewer(self):
-        self.ThreeDViewer.SetSingleObject(self.mdobject)
+        dummy_mdobject = MdObject()
+        dummy_mdobject.landmark_list = self.landmark_list[:]
+        print "refresh threed viewer", len( self.landmark_list), "landmarks"
+        print "refresh threed viewer", len( dummy_mdobject.landmark_list), "object landmarks"
+        self.ThreeDViewer.SetSingleObject(dummy_mdobject)
         self.ThreeDViewer.OnDraw()
+        self.ThreeDViewer.Refresh()
         if self.auto_rotate:
             self.ThreeDViewer.BeginAutoRotate()
 

@@ -348,7 +348,7 @@ class MdDataset(MdModel):
         object_count = len( self.objects )
         if( object_count == 0 ):
             self.set_objects()
-        
+
         average_shape = MdObject()
         average_shape.landmarks = []
         

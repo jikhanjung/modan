@@ -125,27 +125,13 @@ class ModanFrame(wx.Frame):
     def analyze_dialog(self, event):
         selected_item = self.dataset_tree_pane.GetSelection()
         if not selected_item:
-            wx.MessageBox("You should select a dataset to export.")
+            wx.MessageBox("You should select a dataset to analyze.")
             return
-        dsname = self.dataset_tree_pane.GetItemText(selected_item)
-
-        wx.BeginBusyCursor()
-        ds = MdDataset()
-        ds = ds.find_by_name(dsname)[0]
-        ds.load_objects()
-        try:
-            ds.procrustes_superimposition()
-        except MdException, e:
-            wx.MessageBox(str(e))
-            wx.EndBusyCursor()
-            return
-        wx.EndBusyCursor()
-        ds.reference_shape.dataset_id = ds.id
+        ds = self.dataset_tree_pane.GetItemPyData(selected_item)
+        #ds.reference_shape.dataset_id = ds.id
         og = ModanDatasetViewer(self)
         og.SetDataset(ds)
-        og.SetObject(ds.reference_shape)
         og.ShowModal()
-        og.Destroy()
 
     def save_as(self, event):
         newpath = self.open_file_dialog("Save As...", 'save')

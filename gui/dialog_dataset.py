@@ -2,17 +2,17 @@
 # -*- coding: utf-8 -*-
 
 import wx
-from libpy.modan_dbclass import MdDataset
-
+from libpy.modan_dbclass import MdDataset,MdPropertyName
+from gui.dialog_propertyname import ModanPropertynameDialog
 ID_SAVE_BUTTON = 2000
 ID_DELETE_BUTTON = 2001
 ID_CLOSE_BUTTON = 2002
-ID_TEST_BUTTON = 2004
+ID_PROPERTY_BUTTON = 2004
 #ID_TEST2_BUTTON = 2005
 ID_TEXT_WIREFRAME = 2010
 ID_TEXT_POLYGONS = 2011
 
-DIALOG_SIZE = wx.Size(400, 300)
+DIALOG_SIZE = wx.Size(400, 400)
 
 
 class ModanDatasetDialog(wx.Dialog):
@@ -45,8 +45,8 @@ class ModanDatasetDialog(wx.Dialog):
         self.forms['dsdesc'] = wx.TextCtrl(panel, -1, '', style=wx.TE_MULTILINE)
         self.forms['dsdesc'].SetMinSize((300, 50))
         # dataset groupname
-        groupnameLabel = wx.StaticText(panel, -1, 'Group Name', style=wx.ALIGN_CENTER)
-        self.forms['groupname'] = wx.TextCtrl(panel, -1, '')
+        propertiesLabel = wx.StaticText(panel, -1, 'Properties', style=wx.ALIGN_CENTER)
+        self.forms['properties'] = wx.ListBox( panel, -1, choices=(),size=(150,50), style=wx.LB_EXTENDED )
         # wireframe
         wireframeLabel = wx.StaticText(panel, -1, 'Wireframe', style=wx.ALIGN_CENTER)
         self.forms['wireframe'] = wx.TextCtrl(panel, ID_TEXT_WIREFRAME, '')  #wx.TextCtrl(panel, -1, '')
@@ -62,6 +62,9 @@ class ModanDatasetDialog(wx.Dialog):
         baselineLabel = wx.StaticText(panel, -1, 'Baseline', style=wx.ALIGN_CENTER)
         self.forms['baseline'] = wx.TextCtrl(panel, -1, '')
 
+        editpropertyButton = wx.Button(panel, ID_PROPERTY_BUTTON, '+')
+        self.Bind(wx.EVT_BUTTON, self.OnProperty, id=ID_PROPERTY_BUTTON)
+
         inputSizer = wx.FlexGridSizer(cols=2, hgap=10)
         inputSizer.AddGrowableCol(1)
         inputSizer.Add(dsnameLabel, 0, wx.ALIGN_CENTER | wx.ALIGN_CENTER_VERTICAL)
@@ -76,8 +79,14 @@ class ModanDatasetDialog(wx.Dialog):
         inputSizer.Add(self.forms['polygons'], 0, wx.EXPAND)
         inputSizer.Add(baselineLabel, 0, wx.ALIGN_CENTER | wx.ALIGN_CENTER_VERTICAL)
         inputSizer.Add(self.forms['baseline'], 0, wx.EXPAND)
-        inputSizer.Add(groupnameLabel, 0, wx.ALIGN_CENTER | wx.ALIGN_CENTER_VERTICAL)
-        inputSizer.Add(self.forms['groupname'], 0, wx.EXPAND)
+        inputSizer.Add(propertiesLabel, 0, wx.ALIGN_CENTER | wx.ALIGN_CENTER_VERTICAL)
+
+
+
+        propertySizer = wx.BoxSizer(wx.HORIZONTAL)
+        propertySizer.Add(self.forms['properties'], 0, wx.EXPAND)
+        propertySizer.Add(editpropertyButton, 0,wx.ALIGN_CENTER | wx.ALIGN_CENTER_VERTICAL)
+        inputSizer.Add(propertySizer, 0, wx.EXPAND)
         mainSizer.Add(inputSizer, 0, wx.EXPAND | wx.ALL, 10)
 
         ## Buttons
@@ -123,14 +132,38 @@ class ModanDatasetDialog(wx.Dialog):
         self.forms['baseline'].SetValue(ds.baseline)
         #self.forms['groupname'].SetValue(ds.groupname)
         self.forms['polygons'].SetValue(ds.polygons)
+        self.load_properties()
 
         #print ds.groupname_list
         #self.forms['groupname'].SetValue( ds.groupname )
         #ds.set_wireframe()
 
+    def OnProperty(self, event):
+        property_list = []
+        for i in range(self.forms['properties'].GetCount()):
+            property_list.append(self.forms['properties'].GetClientData(i))
+        dlg = ModanPropertynameDialog(self)
+        dlg.load_propertyname(property_list)
+        ret = dlg.ShowModal()
+        if ret == wx.ID_EDIT:
+            self.forms['properties'].Clear()
+            #self.load_properties()
+            for i in range(dlg.list1.GetCount()):
+                pn = dlg.list1.GetClientData(i)
+                self.forms['properties'].Append( pn.propertyname, pn )
+            #self.refresh_tree()
+
+    def load_properties(self):
+        self.forms['properties'].Clear()
+        for pn in self.dataset.propertyname_list:
+            self.forms['properties'].Append( pn.propertyname, pn )
+
     def OnSave(self, event):
         if self.dataset is None:
             self.dataset = MdDataset()
+
+        session = self.app.get_session()
+        session.add( self.dataset )
 
         self.dataset.dsname = self.forms['dsname'].GetValue()
         self.dataset.dsdesc = self.forms['dsdesc'].GetValue()
@@ -138,14 +171,20 @@ class ModanDatasetDialog(wx.Dialog):
         self.dataset.wireframe = self.forms['wireframe'].GetValue()
         self.dataset.polygons = self.forms['polygons'].GetValue()
         self.dataset.dimension = self.forms['dimension'].GetValue()
-        self.dataset.groupname = self.forms['groupname'].GetValue()
+        property_list = []
+        for i in range(self.forms['properties'].GetCount()):
+            property_list.append(self.forms['properties'].GetClientData(i))
 
-        session = self.app.get_session()
-        session.add( self.dataset )
-        print self.dataset.dsname
+        for p in self.dataset.propertyname_list:
+            if p not in property_list:
+                self.dataset.propertyname_list.remove(p)
+
+        for p in property_list:
+            if p not in self.dataset.propertyname_list:
+                self.dataset.propertyname_list.append(p)
 
         session.commit()
-        print self.dataset.dsname
+        #print self.dataset.dsname
 
         self.EndModal(wx.ID_EDIT)
 
@@ -160,7 +199,6 @@ class ModanDatasetDialog(wx.Dialog):
                 session.add( self.dataset )
                 session.delete(self.dataset)
                 session.commit()
-                self.GetParent().Refresh()
                 self.EndModal(wx.ID_EDIT)
 
     def OnClose(self, event):
@@ -172,7 +210,7 @@ class ModanDatasetDialog(wx.Dialog):
             self.forms['dsname'].SetValue(ds.dsname)
             self.forms['dsdesc'].SetValue(ds.dsdesc)
             self.forms['dimension'].SetValue(str(ds.dimension))
-            self.forms['groupname'].SetValue(ds.groupname)
+            #self.forms['groupname'].SetValue(ds.groupname)
             self.forms['baseline'].SetValue(ds.baseline)
             self.forms['polygons'].SetValue(ds.polygons)
             self.forms['wireframe'].SetValue(ds.wireframe)
