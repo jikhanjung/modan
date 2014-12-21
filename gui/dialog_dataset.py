@@ -216,7 +216,7 @@ class ModanDatasetDialog(wx.Dialog):
             self.forms['wireframe'].SetValue(ds.wireframe)
 
     def SetDimension(self, dim):
-        if ( dim ):
+        if dim:
             self.forms['dimension'].SetValue(str(dim))
 
     def OnTest(self, event):

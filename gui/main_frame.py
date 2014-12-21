@@ -10,30 +10,27 @@ from gui.dialog_import import ModanImportDialog
 from gui.dialog_export import ModanExportDialog
 from gui.dialog_dataset import ModanDatasetDialog
 from gui.dialog_datasetviewer import ModanDatasetViewer
-from libpy.model_mdobject import MdObject
-from libpy.model_mddataset import MdDataset
 from libpy.modan_version import MODAN_VERSION
 
-from libpy.modan_exception import MdException
+CONST = {}
+CONST['WINDOW_SIZE'] = wx.Size(800, 600)
+CONST['TREE_PANE_WIDTH'] = 200
+CONST['MIN_TREE_PANE_WIDTH'] = 100
+CONST['ITEM_LIST_HEIGHT'] = 300
+CONST['MIN_ITEM_PANE_HEIGHT'] = 200
 
-WINDOW_SIZE = wx.Size(800, 600)
-TREE_PANE_WIDTH = 200
-MIN_TREE_PANE_WIDTH = 100
-ITEM_LIST_HEIGHT = 300
-MIN_ITEM_PANE_HEIGHT = 200
-
-ID_OBJECT_CONTENT = 77
-
-ID_OPEN_DB = 1001
-ID_NEW_DATASET = 1002
-ID_SAVEAS = 1003
-ID_IMPORT = 1004
-ID_EXPORT = 1005
-ID_ANALYZE = 1006
-ID_NEW_OBJECT = 1007
-ID_PREFERENCES = 1009
-ID_NEW_DB = 1010
-ID_ABOUT = 1011
+CONTROL_ID = {}
+CONTROL_ID['ID_OBJECT_CONTENT'] = 77
+CONTROL_ID['ID_OPEN_DB'] = 1001
+CONTROL_ID['ID_NEW_DATASET'] = 1002
+CONTROL_ID['ID_SAVEAS'] = 1003
+CONTROL_ID['ID_IMPORT'] = 1004
+CONTROL_ID['ID_EXPORT'] = 1005
+CONTROL_ID['ID_ANALYZE'] = 1006
+CONTROL_ID['ID_NEW_OBJECT'] = 1007
+CONTROL_ID['ID_PREFERENCES'] = 1009
+CONTROL_ID['ID_NEW_DB'] = 1010
+CONTROL_ID['ID_ABOUT'] = 1011
 
 
 class EmptyEvent(wx.Event):
@@ -44,7 +41,7 @@ class EmptyEvent(wx.Event):
 
 class ModanFrame(wx.Frame):
     def __init__(self, parent, wid, title):
-        wx.Frame.__init__(self, parent, wid, title, wx.DefaultPosition, WINDOW_SIZE)
+        wx.Frame.__init__(self, parent, wid, title, wx.DefaultPosition, CONST['WINDOW_SIZE'])
         self.statusbar = self.CreateStatusBar()
         self.app = wx.GetApp()
 
@@ -61,47 +58,47 @@ class ModanFrame(wx.Frame):
         tool_image_preferences = wx.Bitmap("icon/preferences.png", wx.BITMAP_TYPE_PNG)
         tool_image_about = wx.Bitmap("icon/about.png", wx.BITMAP_TYPE_PNG)
 
-        toolbar.AddSimpleTool(ID_OPEN_DB, tool_image_opendb, "Open DB")
-        toolbar.AddSimpleTool(ID_NEW_DB, tool_image_newdb, "Create New DB")
-        toolbar.AddSimpleTool(ID_SAVEAS, tool_image_saveas, "SaveAs")
-        toolbar.AddSimpleTool(ID_NEW_DATASET, tool_image_newdataset, "New Dataset")
-        toolbar.AddSimpleTool(ID_NEW_OBJECT, tool_image_newobject, "New Object")
-        toolbar.AddSimpleTool(ID_EXPORT, tool_image_export, "Export Data")
-        toolbar.AddSimpleTool(ID_IMPORT, tool_image_import, "Import Data")
-        toolbar.AddSimpleTool(ID_ANALYZE, tool_image_analyze, "Analyze Data")
-        toolbar.AddSimpleTool(ID_PREFERENCES, tool_image_preferences, "Preferences")
-        toolbar.AddSimpleTool(ID_ABOUT, tool_image_about, "About")
+        toolbar.AddSimpleTool(CONTROL_ID['ID_OPEN_DB'], tool_image_opendb, "Open DB")
+        toolbar.AddSimpleTool(CONTROL_ID['ID_NEW_DB'], tool_image_newdb, "Create New DB")
+        toolbar.AddSimpleTool(CONTROL_ID['ID_SAVEAS'], tool_image_saveas, "SaveAs")
+        toolbar.AddSimpleTool(CONTROL_ID['ID_NEW_DATASET'], tool_image_newdataset, "New Dataset")
+        toolbar.AddSimpleTool(CONTROL_ID['ID_NEW_OBJECT'], tool_image_newobject, "New Object")
+        toolbar.AddSimpleTool(CONTROL_ID['ID_EXPORT'], tool_image_export, "Export Data")
+        toolbar.AddSimpleTool(CONTROL_ID['ID_IMPORT'], tool_image_import, "Import Data")
+        toolbar.AddSimpleTool(CONTROL_ID['ID_ANALYZE'], tool_image_analyze, "Analyze Data")
+        toolbar.AddSimpleTool(CONTROL_ID['ID_PREFERENCES'], tool_image_preferences, "Preferences")
+        toolbar.AddSimpleTool(CONTROL_ID['ID_ABOUT'], tool_image_about, "About")
 
         toolbar.SetToolBitmapSize(wx.Size(32, 32))
         toolbar.Realize()
-        self.Bind(wx.EVT_TOOL, self.open_db_dialog, id=ID_OPEN_DB)
-        self.Bind(wx.EVT_TOOL, self.new_db_dialog, id=ID_NEW_DB)
-        self.Bind(wx.EVT_TOOL, self.object_dialog, id=ID_NEW_OBJECT)
-        self.Bind(wx.EVT_TOOL, self.dataset_dialog, id=ID_NEW_DATASET)
-        self.Bind(wx.EVT_TOOL, self.save_as, id=ID_SAVEAS)
-        self.Bind(wx.EVT_TOOL, self.import_dialog, id=ID_IMPORT)
-        self.Bind(wx.EVT_TOOL, self.export_dialog, id=ID_EXPORT)
-        self.Bind(wx.EVT_TOOL, self.analyze_dialog, id=ID_ANALYZE)
-        self.Bind(wx.EVT_TOOL, self.preferences_dialog, id=ID_PREFERENCES)
-        self.Bind(wx.EVT_TOOL, self.about_dialog, id=ID_ABOUT)
+        self.Bind(wx.EVT_TOOL, self.open_db_dialog, id=CONTROL_ID['ID_OPEN_DB'])
+        self.Bind(wx.EVT_TOOL, self.new_db_dialog, id=CONTROL_ID['ID_NEW_DB'])
+        self.Bind(wx.EVT_TOOL, self.object_dialog, id=CONTROL_ID['ID_NEW_OBJECT'])
+        self.Bind(wx.EVT_TOOL, self.dataset_dialog, id=CONTROL_ID['ID_NEW_DATASET'])
+        self.Bind(wx.EVT_TOOL, self.save_as, id=CONTROL_ID['ID_SAVEAS'])
+        self.Bind(wx.EVT_TOOL, self.import_dialog, id=CONTROL_ID['ID_IMPORT'])
+        self.Bind(wx.EVT_TOOL, self.export_dialog, id=CONTROL_ID['ID_EXPORT'])
+        self.Bind(wx.EVT_TOOL, self.analyze_dialog, id=CONTROL_ID['ID_ANALYZE'])
+        self.Bind(wx.EVT_TOOL, self.preferences_dialog, id=CONTROL_ID['ID_PREFERENCES'])
+        self.Bind(wx.EVT_TOOL, self.about_dialog, id=CONTROL_ID['ID_ABOUT'])
 
         ## Splitter
         self.tree_splitter = wx.SplitterWindow(self, -1, style=wx.SP_BORDER)
-        self.tree_splitter.SetMinimumPaneSize(MIN_TREE_PANE_WIDTH)
+        self.tree_splitter.SetMinimumPaneSize(CONST['MIN_TREE_PANE_WIDTH'])
         self.object_splitter = wx.SplitterWindow(self.tree_splitter, -1, style=wx.SP_BORDER)
-        self.object_splitter.SetMinimumPaneSize(MIN_ITEM_PANE_HEIGHT)
+        self.object_splitter.SetMinimumPaneSize(CONST['MIN_ITEM_PANE_HEIGHT'])
 
         ## Dataset Tree
-        self.object_content_pane = MdObjectContent(self.object_splitter, ID_OBJECT_CONTENT, frame=self)
+        self.object_content_pane = MdObjectContent(self.object_splitter, CONTROL_ID['ID_OBJECT_CONTENT'], frame=self)
         self.object_list_pane = MdObjectList(self.object_splitter, -1, frame=self)
         self.dataset_tree_pane = MdDatasetTree(self.tree_splitter, -1, frame=self)
 
         ## Object content
-        self.object_content_pane.Bind(wx.EVT_LEFT_DCLICK, self.on_double_click, id=ID_OBJECT_CONTENT)
+        self.object_content_pane.Bind(wx.EVT_LEFT_DCLICK, self.on_double_click, id=CONTROL_ID['ID_OBJECT_CONTENT'])
 
         ## Wrap up
-        self.object_splitter.SplitHorizontally(self.object_list_pane, self.object_content_pane, ITEM_LIST_HEIGHT)
-        self.tree_splitter.SplitVertically(self.dataset_tree_pane, self.object_splitter, TREE_PANE_WIDTH)
+        self.object_splitter.SplitHorizontally(self.object_list_pane, self.object_content_pane, CONST['ITEM_LIST_HEIGHT'])
+        self.tree_splitter.SplitVertically(self.dataset_tree_pane, self.object_splitter, CONST['TREE_PANE_WIDTH'])
         self.Bind(wx.EVT_SIZE, self.on_resize)
 
         icon_file = "icon/modan.ico"
@@ -161,20 +158,21 @@ class ModanFrame(wx.Frame):
         file_dialog.Destroy()
         return newpath
 
-    def open_dataset_dialog(self):
+    def dataset_dialog(self, event):
+        self.open_dataset_dialog()
+
+    def open_dataset_dialog(self, dataset=None,dim=-1):
         ds_dialog = ModanDatasetDialog(self.dataset_tree_pane, -1)
+        if dataset is not None:
+            ds_dialog.SetMdDataset(dataset)
+        if dim > 0:
+            ds_dialog.SetDimension(dim)
         ret = ds_dialog.ShowModal()
         if ret == wx.ID_EDIT:
             self.refresh_tree()
 
-    def dataset_dialog(self, event):
-        self.open_dataset_dialog()
-
-    def preferences_dialog(self, event):
-        return
-
-    def about_dialog(self, event):
-        wx.MessageBox("Modan version " + MODAN_VERSION + "\nCopyright (c) 2009-2014 Jikhan Jung. All rights reserved.")
+    def object_dialog(self, event):
+        self.open_object_dialog()
 
     def open_object_dialog(self, mdobject=None):
         if not self.dataset_tree_pane.dataset_selected:
@@ -190,13 +188,15 @@ class ModanFrame(wx.Frame):
             print "refresh tree"
             self.refresh_tree()
 
-    def object_dialog(self, event):
-        self.open_object_dialog()
+    def preferences_dialog(self, event):
+        return
+
+    def about_dialog(self, event):
+        wx.MessageBox("Modan version " + MODAN_VERSION + "\nCopyright (c) 2009-2014 Jikhan Jung. All rights reserved.")
 
     def import_dialog(self, event):
         import_dlg = ModanImportDialog(self, -1)
         import_dlg.ShowModal()
-        import_dlg.Destroy()
         self.refresh_tree()
 
     def export_dialog(self, event):
@@ -207,12 +207,9 @@ class ModanFrame(wx.Frame):
             wx.MessageBox("You should select a dataset to export.")
             return
 
-        dsname = self.dataset_tree_pane.GetItemText(selected_item)
-        ds = MdDataset()
-        ds = ds.find_by_name(dsname)
-        ds[0].load_objects()
-        export_dialog.SetDataset(ds[0])
-        export_dialog.SetExportList(ds[0].objects)
+        ds = self.dataset_tree_pane.GetItemPyData(selected_item)
+        export_dialog.SetDataset(ds)
+        export_dialog.SetExportList(ds.object_list)
         #print ds[0].objects
         export_dialog.ShowModal()
         export_dialog.Destroy()

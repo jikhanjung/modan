@@ -31,18 +31,10 @@ class MainTreeMenu(wx.Menu):
             self.Bind(wx.EVT_MENU, self.OnAddDataset, id=addNew.GetId())
 
     def OnAddDataset(self, event):
-        ds_dialog = ModanDatasetDialog(self.parent, -1)
-        ds_dialog.SetDimension(str(self.dim))
-        ds_dialog.ShowModal()
-        self.parent.refresh_dataset()
-        # print "add dataset"
-        #self.Close()
+        self.frame.open_dataset_dialog(dim=self.dim)
 
     def OnEditDataset(self, event):
-        self.frame.open_dataset_dialog()
-        # self.parent.Refresh()
-        #print "edit dataset"
-        #self.Close()
+        self.frame.open_dataset_dialog(self.dataset)
 
     def OnDelDataset(self, event):
         self.frame.open_dataset_dialog()

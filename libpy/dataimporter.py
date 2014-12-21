@@ -1,13 +1,10 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import os
 import re
-import sqlite3
-
 import xlrd
 
-from libpy.model_mdobject import MdObject
-from libpy.model_mdlandmark import MdLandmark
-from libpy.model_mddataset import MdDataset
-
+from libpy.modan_dbclass import MdObject, MdDataset, MdLandmark, MdPropertyName, MdProperty
 
 ID_TAB_DELIMITED = 1
 ID_ABERLINK = 2
@@ -63,6 +60,8 @@ class ModanDataImporter:
         found = False
         for line in tps_lines:
             line = line.strip()
+            if line == '':
+                continue
             headerline = re.search('^(\w+)(\s*)=(\s*)(\d+)(.*)', line)
             if headerline == None:
                 if header == 'lm':
@@ -71,7 +70,9 @@ class ModanDataImporter:
                         threed += 1
                     else:
                         twod += 1
-                    data.append(point)
+
+                    if len(point)>1:
+                        data.append(point)
                 continue
             elif headerline.group(1).lower() == "lm":
                 if len(data) > 0:
@@ -85,7 +86,7 @@ class ModanDataImporter:
                 object_count += 1
                 landmark_count, comment = int(headerline.group(4)), headerline.group(5).strip()
                 # landmark_count_list.append( landmark_count )
-                #if not found:
+                # if not found:
                 #found = True
             elif headerline.group(1).lower() == "image":
                 image_count += 1
@@ -119,7 +120,7 @@ class ModanDataImporter:
         data_list = []
         if len(sheet_list) == 1 or \
                                         len(sheet_list) == 3 and ( sheet_list[1].nrows == 0 ) and (
-                    sheet_list[2].nrows == 0 ):
+                            sheet_list[2].nrows == 0 ):
             ''' all the objects are in a single sheet '''
             object_count = -1
             row_list = []
@@ -235,94 +236,78 @@ class ModanDataImporter:
                         pass
         return success
 
-    def ImportDataset(self, dimension=3):
+    def ImportDataset(self, session, dimension=3):
         ''' don't forget to implement transaction for this method '''
 
         ''' first, insert the dataset '''
         if self.dimension < 0:
             self.dimension = dimension
+
         ds = MdDataset()
         ds.dsname = self.dataset_name
         ds.dimension = self.dimension
 
-        temp_dataset = MdDataset()
         dsname = newname = self.dataset_name
         i = 1
-        while temp_dataset.find_by_name(newname) != []:
+        len( session.query(MdDataset).filter(MdDataset.dsname==newname).all() ) > 0
+        while len( session.query(MdDataset).filter(MdDataset.dsname==newname).all() ) > 0:
             newname = dsname + " (" + str(i) + ")"
             i += 1
         ds.dsname = newname
-        try:
-            ds.insert()
-        except sqlite3.OperationalError, errmsg:
-            print errmsg
-            self.error_message = errmsg
-            # wx.MessageBox( "Error: " + errmsg  )
-            return
+        session.add(ds)
 
         ''' and then objects and landmarks '''
         if self.filetype == FILETYPE_TPS:
-            self.importTpsFile(ds)
+            self.importTpsFile(ds,session)
         elif self.filetype == FILETYPE_MORPHOLOGIKA:
-            self.importMorphologikaFile(ds)
+            self.importMorphologikaFile(ds,session)
         elif self.filetype == FILETYPE_EXCEL:
-            self.importExcelFile(ds)
+            self.importExcelFile(ds,session)
             # elif self.filetype == FILETYPE_TEXT:
-            #pass
+            # pass
         return
 
-    def importMorphologikaFile(self, dataset):
-
-        objects = []
+    def importMorphologikaFile(self, dataset, session):
         i = 0
         # abc
         for name in self.data['names']:
-            object = MdObject()
-            object.objname = name
-            object.dataset_id = dataset.id
-            object.landmarks = []
+            obj = MdObject()
+            obj.objname = name
+            obj.landmark_list = []
             j = 1
             begin = i * self.landmark_count
             count = self.landmark_count
-            #print begin, begin + count
+            # print begin, begin + count
             for point in self.data['rawpoints'][begin:begin + count]:
                 #print point
                 coords = re.split('\s+', point)
-                lm = MdLandmark()
-                lm.lmseq = j
-                if len(coords) < 2 or len(coords) > 3:
-                    continue
-                lm.xcoord, lm.ycoord = coords[0], coords[1]
-                if len(coords) == 3:
-                    lm.zcoord = coords[2]
-                object.landmarks.append(lm)
+                obj.landmark_list.append(MdLandmark(coords))
+                obj.pack_landmark()
                 j += 1
-            objects.append(object)
+            dataset.object_list.append(obj)
             i += 1
 
         group_info = []
         group_number = []
-        group_label_list = []
-        group_label_values = []
         edge_list = []
         polygon_list = []
-
-        '''for line in self.data['groups']:
-          items = re.split( '\s+', line )
-          for key, value in items:
-            group_info.append( key )
-            group_number.append( int( value ) )'''
+        propertyname_list = []
+        property_list_list = []
 
         if 'labels' in self.data.keys():
             for line in self.data['labels']:
                 labels = re.split('\s+', line)
                 for label in labels:
-                    group_label_list.append(label)
+                    propertyname_list.append( label )
+                    dataset.propertyname_list.append(MdPropertyName(label))
+
+        # flush session to get dataset id and mdpropertyname ids
+        session.flush()
 
         if 'labelvalues' in self.data.keys():
             for line in self.data['labelvalues']:
-                values = re.split('\s+', line)
-                group_label_values.append(values)
+                property_list = re.split('\s+', line)
+                property_list_list.append(property_list)
 
         if 'wireframe' in self.data.keys():
             for line in self.data['wireframe']:
@@ -350,96 +335,47 @@ class ModanDataImporter:
         a'''
 
         ''' Error checking and warning '''
-        if len(objects) == 0:
+        if len(dataset.object_list) == 0:
             print "no objects!"
-        if len(objects) != self.object_count:
-            print 'number of objects does not match!! Supposed to be %d, but only %d found' % (
-            self.object_count, len(objects) )
-        #print raw_object_list
-        if len(objects[len(objects) - 1].landmarks) != self.landmark_count:
-            print 'number of landmarks does not match for last object!! Supposed to be %d, but only %d found' % (
-            self.landmark_count, len(objects[len(objects) - 1]) )
-
-        ''' process groups '''
-        sum = 0
-        temp_num = []
-        temp_name = []
-        for i in range(len(group_info)):
-            sum += int(group_number[i])
-            temp_name.append(group_info[i])
-            temp_num.append(group_number[i])
-            if sum > self.object_count:
-                ''' group info does not match with number of objects '''
-                print "Group info " + ", ".join(temp_name) + " (total " + str(
-                    sum) + ") does not match with the number of objects " + str(
-                    self.object_count) + ". No more group info will be processed."
-                break
-            elif sum == self.object_count:
-                group_label_list.append("_".join(temp_name))
-                l = 0
-                for j in range(len(temp_num)):
-                    for k in range(temp_num[j]):
-                        group_label_values[l].append(temp_name[j])
-                        l += 1
-                temp_name = []
-                temp_num = []
-                sum = 0
+        if len(dataset.object_list) != self.object_count:
+            print 'number of objects does not match!! %d objects expected, but %d objects found' % (
+                self.object_count, len(dataset.object_list) )
 
         i = 0
-        #print group_label_list
-        #print group_label_values
-        for object in objects:
-            for j in range(len(group_label_values[i])):
-                object.group_list[j] = group_label_values[i][j]
-            object.dataset_id = dataset.id
+        for obj in dataset.object_list:
+            for j in range(len(property_list_list[i])):
+                mdprop = MdProperty(property_list_list[i][j])
+                mdprop.object_id = obj.id
+                mdprop.propertyname_id = dataset.propertyname_list[j].id
+                obj.property_list.append(mdprop)
+            obj.dataset_id = dataset.id
             #print object.id
-            object.insert()
             i += 1
             #percentage = ( float( processed_object ) / float ( self.objectcount) ) * 100
             percentage = ( float(i) / float(self.object_count) ) * 100
             self.parent.SetProgress(int(percentage))
         #print group_info
-        dataset.groupname_list = group_label_list
         edge_list.sort()
         dataset.edge_list = edge_list
+        dataset.pack_wireframe()
         polygon_list.sort()
         dataset.polygon_list = polygon_list
-        dataset.pack_wireframe()
-        dataset.pack_groupname()
         dataset.pack_polygons()
-        #print dataset.groupname_list
-        #print dataset.id
-        #dataset.dimension = dimension
-        try:
-            dataset.update()
-        except:
-            print "Error while updating Dataset"
-            raise
+        return
 
-    def importTpsFile(self, dataset):
+    def importTpsFile(self, dataset, session):
         for name in self.data.keys():
-            object = MdObject()
-            object.objname = name
-            object.dataset_id = dataset.id
-            i = 0
+            obj = MdObject()
+            obj.objname = name
+            obj.landmark_list = []
             for point in self.data[name]:
                 coords = point
                 # print point
-                lm = MdLandmark()
-                lm.lmseq = ( i + 1 )
-                #coords = re.split( '\s+', point )
-                #print coords
-                if len(coords) < 2 or len(coords) > 3:
-                    continue
-                lm.xcoord = coords[0]
-                lm.ycoord = coords[1]
-                if len(coords) == 3:
-                    lm.zcoord = coords[2]
-                object.landmarks.append(lm)
-                i += 1
-            # print object.landmarks
-            object.insert()
-            #print name, self.data[name]
+                if len(coords)>0:
+                    lm = MdLandmark(coords)
+                    obj.landmark_list.append(lm)
+                    obj.pack_landmark()
+            dataset.object_list.append( obj )
 
     def checkExcelSheet(self, sheet):
         new_objects = []
@@ -447,34 +383,27 @@ class ModanDataImporter:
             pass
         return new_objects
 
-    def ExcelSheetToMdObject(self, sheet, dataset_id):
-        new_objects = []
+    def ExcelSheetToMdObject(self, sheet, dataset):
         sheetdata = []
         for r in range(sheet.nrows):
             sheetdata.append(sheet.row_values(r))
-        print len(sheetdata)
         self.set_grid_from_list(sheetdata)
         self.checkDataType()
         mo = MdObject()
         mo.objname = sheet.name
         mo.objdesc = ''
-        mo.scale = ''
-        mo.dataset_id = dataset_id
-        seq = 0
+        mo.landmark_list = []
         for lm in self.grid:
-            seq = seq + 1
-            mo.landmarks.append(MdLandmark(lmseq=seq, xcoord=lm[0], ycoord=lm[1], zcoord=lm[2]))
-        mo.insert()
-        return 1
+            mo.landmark_list.append(MdLandmark(lm))
+        dataset.object_list.append(mo)
+        return
 
-        return new_objects
-
-    def importExcelFile(self, dataset):
-        objects = []
+    def importExcelFile(self, dataset, session):
+        # TODO : test Excel file import
         for sheet in self.data:
-            self.ExcelSheetToMdObject(sheet, dataset.id)
+            self.ExcelSheetToMdObject(sheet, dataset)
             # for obj in converted_objects:
-            #  objects.append( obj )
+            # objects.append( obj )
 
     def checkDataType(self):
         row_to_check = 5
@@ -491,7 +420,7 @@ class ModanDataImporter:
         if ( row_to_check > 2 ):
             mode_point = 0
             # dim_point = 0
-            #prev_colnum = 0
+            # prev_colnum = 0
             max_colnum = 10
             colnum = 0
             cols = []
@@ -576,7 +505,7 @@ class ModanDataImporter:
                 cols[i] = cols[coord_begin + i]
             cols[i + 1:len(cols)] = []
             # pass
-            #print self.title
+            # print self.title
             #print self.grid
 
     def isNumber(self, s):
@@ -588,7 +517,7 @@ class ModanDataImporter:
 
 
 # text = "this is title\t1\t1\t1\n"
-#text += "\t1\t1\t2\n"
+# text += "\t1\t1\t2\n"
 #text += "\t1\t1\t3\n"
 #text += "\t1\t1\t4\n"
 #text += "\t2\t3\t4\n"

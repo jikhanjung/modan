@@ -94,6 +94,7 @@ class MdObjectList(NiftyVirtualList):
         self.colsortfunc.append([])
         columnheader = ['Name', 'LM', 'Csize']
         columnwidth = [100, 40, 60]
+        # TODO enhance objname sort: in such case as "specimen 1", 1 should be treated as number, not string.
         self.colsortfunc[0] = [lambda x, y: cmp(x.objname, y.objname),
                                lambda x, y: cmp(len(x.landmark_list), len(y.landmark_list)),
                                lambda x, y: cmp(x.get_centroid_size(), y.get_centroid_size())
@@ -110,30 +111,14 @@ class MdObjectList(NiftyVirtualList):
         for i in range(len(columnheader)):
             self.colsort.append(0)
         #print groupname_list
-        i = 0
         f = []
         f.append([])
         f.append([])
-        f[0].append(lambda x, y: cmp(x.group1, y.group1))
-        f[0].append(lambda x, y: cmp(x.group2, y.group2))
-        f[0].append(lambda x, y: cmp(x.group3, y.group3))
-        f[0].append(lambda x, y: cmp(x.group4, y.group4))
-        f[0].append(lambda x, y: cmp(x.group5, y.group5))
-        f[0].append(lambda x, y: cmp(x.group6, y.group6))
-        f[0].append(lambda x, y: cmp(x.group7, y.group7))
-        f[0].append(lambda x, y: cmp(x.group8, y.group8))
-        f[0].append(lambda x, y: cmp(x.group9, y.group9))
-        f[0].append(lambda x, y: cmp(x.group10, y.group10))
-        f[1].append(lambda y, x: cmp(x.group1, y.group1))
-        f[1].append(lambda y, x: cmp(x.group2, y.group2))
-        f[1].append(lambda y, x: cmp(x.group3, y.group3))
-        f[1].append(lambda y, x: cmp(x.group4, y.group4))
-        f[1].append(lambda y, x: cmp(x.group5, y.group5))
-        f[1].append(lambda y, x: cmp(x.group6, y.group6))
-        f[1].append(lambda y, x: cmp(x.group7, y.group7))
-        f[1].append(lambda y, x: cmp(x.group8, y.group8))
-        f[1].append(lambda y, x: cmp(x.group9, y.group9))
-        f[1].append(lambda y, x: cmp(x.group10, y.group10))
+        for k in range(len(propertyname_list)):
+            f[0].append(lambda x, y: cmp(x.property_list[k].property, y.property_list[k].property))
+        for k in range(len(propertyname_list)):
+            f[1].append(lambda y, x: cmp(x.property_list[k].property, y.property_list[k].property))
+        i = 0
         for p in propertyname_list:
             columnheader.append(p.propertyname)
             columnwidth.append(100)

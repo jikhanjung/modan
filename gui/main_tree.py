@@ -135,20 +135,13 @@ class MdDatasetTree(wx.TreeCtrl):
         return
 
     def on_activated(self, evt):
-        print "activated"
         itemid = evt.GetItem()
         # print itemid
         ds = self.GetItemPyData(itemid)
-        if ( ds == None ):
-            return
-        ds_dialog = ModanDatasetDialog(self, -1)
-        ds_dialog.SetMdDataset(ds)
-        ret = ds_dialog.ShowModal()
-        if ret == wx.ID_EDIT:
-            self.refresh_dataset()
+        self.frame.open_dataset_dialog(ds)
+        return
 
     def on_context_menu(self, evt):
-        print "context menu"
         itemid = evt.GetItem()
         ds = self.GetItemPyData(itemid)
         self.SelectItem(itemid)
@@ -157,11 +150,12 @@ class MdDatasetTree(wx.TreeCtrl):
         elif ( itemid == self.categories['3D'] ):
             treemenu = MainTreeMenu(self, mode='root', dim=3)
         else:
-            treemenu = MainTreeMenu(self, mode='dataset', dataset=ds)
+            treemenu = MainTreeMenu(self.frame.dataset_tree_pane, mode='dataset', dataset=ds)
 
         self.PopupMenu(treemenu, evt.GetPoint())
 
     def drop_object(self, x, y, data, action):
+        # TODO take care of property list differences between datasets
         ( itemid, flag ) = self.HitTest(( x, y ))
         # flag
         app = wx.GetApp()

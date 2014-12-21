@@ -2,495 +2,43 @@
 # -*- coding: utf-8 -*-
 import math
 
-import wx
 from wx.lib.plot import *
 import numpy
 
 from gui.opengltest import MdCanvas
-from libpy.modan_dbclass import MdDataset, MdLandmark, MdObject
+from libpy.modan_dbclass import MdDatasetView
 from libpy.mdstatistics import MdPrincipalComponent2
 from libpy.mdstatistics import MdCanonicalVariate
 from libpy.mdstatistics import MdManova
 from libpy.modan_exception import MdException
-
 use_mplot = False
 
-# if use_mplot:
-#  import wxmpl
-#  import matplotlib
-#  import matplotlib.cm as cm
-#  from pylab import array, arange, sin, cos, exp, pi, randn, normpdf, meshgrid, \
-#      convolve
+CONST = {}
+CONST['DIALOG_SIZE'] = wx.Size(1024, 768)
+CONST['IDX_BOOKSTEIN'] = 0
+CONST['IDX_SBR'] = 1
+CONST['IDX_GLS'] = 2
+CONST['IDX_RFTRA'] = 3
+
+CONTROL_ID = {}
+CONTROL_ID['ID_CHK_AUTO_ROTATE'] = 2021
+CONTROL_ID['ID_CHK_SHOW_INDEX'] = 2022
+CONTROL_ID['ID_CHK_SHOW_WIREFRAME'] = 2023
+CONTROL_ID['ID_CHK_SHOW_MEANSHAPE'] = 2024
+CONTROL_ID['ID_EIGENVALUE_LISTCTRL'] = 2025
+CONTROL_ID['ID_LOADING_LISTCTRL'] = 2026
+CONTROL_ID['ID_RAWDATA_LISTCTRL'] = 2027
+CONTROL_ID['ID_SUPERIMPOSED_LISTCTRL'] = 2028
+CONTROL_ID['ID_FINALCOORDINATES_LISTCTRL'] = 2029
+
+CONTROL_ID['ID_RADIO_SUPERIMPOSITION'] = 2031
+CONTROL_ID['ID_OBJECT_LISTCTRL'] = 2032
+CONTROL_ID['ID_ANALYZE_BUTTON'] = 2033
+
+CONTROL_ID['ID_XAXIS_COMBO'] = 2041
+CONTROL_ID['ID_YAXIS_COMBO'] = 2042
+CONTROL_ID['ID_ZAXIS_COMBO'] = 2043
 
-
-DIALOG_SIZE = wx.Size(1024, 768)
-
-ID_CHK_AUTO_ROTATE = 2021
-ID_CHK_SHOW_INDEX = 2022
-ID_CHK_SHOW_WIREFRAME = 2023
-ID_CHK_SHOW_MEANSHAPE = 2024
-ID_EIGENVALUE_LISTCTRL = 2025
-ID_LOADING_LISTCTRL = 2026
-ID_RAWDATA_LISTCTRL = 2027
-ID_SUPERIMPOSED_LISTCTRL = 2028
-ID_FINALCOORDINATES_LISTCTRL = 2029
-
-ID_RADIO_SUPERIMPOSITION = 2031
-ID_OBJECT_LISTCTRL = 2032
-ID_ANALYZE_BUTTON = 2033
-
-ID_XAXIS_COMBO = 2041
-ID_YAXIS_COMBO = 2042
-ID_ZAXIS_COMBO = 2043
-
-IDX_BOOKSTEIN = 0
-IDX_SBR = 1
-IDX_GLS = 2
-IDX_RFTRA = 3
-
-
-class MdDatasetAnalyzer(MdDataset):
-    def __init__(self,dataset):
-        self.id = dataset.id
-        self.dsname = dataset.dsname
-        self.dsdesc = dataset.dsdesc
-        self.dimension = dataset.dimension
-        self.wireframe = dataset.wireframe
-        self.baseline = dataset.baseline
-        self.polygons = dataset.polygons
-        self.object_list = dataset.object_list[:]
-        self.propertyname_list = dataset.propertyname_list[:]
-
-    def set_reference_shape(self, shape):
-        self.reference_shape = shape
-
-    def rotate_gls_to_reference_shape(self, object_index):
-        num_obj = len(self.object_list)
-        if ( num_obj == 0 or num_obj - 1 < object_index  ):
-            return
-
-        mo = self.object_list[object_index]
-        nlandmarks = len(mo.landmark_list)
-        target_shape = numpy.zeros((nlandmarks, 3))
-        reference_shape = numpy.zeros((nlandmarks, 3))
-
-        i = 0
-        for lm in ( mo.landmark_list ):
-            target_shape[i] = lm.coords
-            i += 1
-
-        i = 0
-        for lm in self.reference_shape.landmark_list:
-            reference_shape[i] = lm.coords
-            i += 1
-
-        rotation_matrix = self.rotation_matrix(reference_shape, target_shape)
-        #print rotation_matrix
-        #target_transposed = numpy.transpose( target_shape )
-        #print target_transposed
-        #print rotation_matrix.shape
-        #print target_transposed.shape
-        rotated_shape = numpy.transpose(numpy.dot(rotation_matrix, numpy.transpose(target_shape)))
-
-        #print rotated_shape
-
-        i = 0
-        for lm in ( mo.landmark_list ):
-            lm.coords = [ rotated_shape[i, 0], rotated_shape[i, 1], rotated_shape[i, 2] ]
-            i += 1
-
-    def rotation_matrix(self, ref, target):
-        #assert( ref[0] == 3 )
-        #assert( ref.shape == target.shape )
-
-        correlation_matrix = numpy.dot(numpy.transpose(ref), target)
-        v, s, w = numpy.linalg.svd(correlation_matrix)
-        s
-        is_reflection = ( numpy.linalg.det(v) * numpy.linalg.det(w) ) < 0.0
-        if is_reflection:
-            v[-1, :] = -v[-1, :]
-        return numpy.dot(v, w)
-
-    def get_average_shape(self):
-
-        object_count = len(self.object_list)
-
-        average_shape = MdObject()
-        average_shape.landmark_list = []
-
-        sum_x = []
-        sum_y = []
-        sum_z = []
-
-        for mo in self.object_list:
-            i = 0
-            for lm in mo.landmark_list:
-                if len(sum_x) <= i:
-                    sum_x.append(0)
-                    sum_y.append(0)
-                    sum_z.append(0)
-                sum_x[i] += lm.coords[0]
-                sum_y[i] += lm.coords[1]
-                sum_z[i] += lm.coords[2]
-                i += 1
-        for i in range(len(sum_x)):
-            lm = MdLandmark( [ float(sum_x[i]) / object_count, float(sum_y[i]) / object_count, float(sum_z[i]) / object_count ])
-            average_shape.landmark_list.append(lm)
-        if self.id:
-            average_shape.dataset_id = self.id
-        return average_shape
-
-    def check_object_list(self):
-        min_number_of_landmarks = 999
-        max_number_of_landmarks = 0
-        sum_val = 0
-        for mo in self.object_list:
-            number_of_landmarks = len(mo.landmark_list)
-            # print number_of_landmarks
-            sum_val += number_of_landmarks
-            min_number_of_landmarks = min(min_number_of_landmarks, number_of_landmarks)
-            max_number_of_landmarks = max(max_number_of_landmarks, number_of_landmarks)
-        #average_number_of_landmarks = float( sum_val ) / len( self.objects )
-        #print min_number_of_landmarks, max_number_of_landmarks
-        if sum_val > 0 and min_number_of_landmarks != max_number_of_landmarks:
-            raise MdException, "Inconsistent number of landmarks"
-            return
-
-    def procrustes_superimposition(self):
-        #print "begin_procrustes"
-        try:
-            self.check_object_list()
-        except MdException, e:
-            raise e
-
-        for mo in self.object_list:
-            #mo.set_landmarks()
-            mo.move_to_center()
-            mo.rescale_to_unitsize()
-
-        average_shape = None
-        previous_average_shape = None
-        i = 0
-        while ( True ):
-            i += 1
-            #print "progressing...", i
-            previous_average_shape = average_shape
-            average_shape = self.get_average_shape()
-            #average_shape.print_landmarks()
-            if ( self.is_same_shape(previous_average_shape, average_shape) and previous_average_shape != None ):
-                break
-            self.set_reference_shape(average_shape)
-            for j in range(len(self.object_list)):
-                self.rotate_gls_to_reference_shape(j)
-                #self.objects[0].print_landmarks('aa')
-                #self.objects[1].print_landmarks('bb')
-                #average_shape.print_landmarks('cc')
-
-    def is_same_shape(self, shape1, shape2):
-        if ( shape1 == None or shape2 == None ):
-            return False
-        sum_coord = 0
-        for i in range(len(shape1.landmark_list)):
-            sum_coord += ( shape1.landmark_list[i].coords[0] - shape2.landmark_list[i].coords[0]) ** 2
-            sum_coord += ( shape1.landmark_list[i].coords[1] - shape2.landmark_list[i].coords[1]) ** 2
-            sum_coord += ( shape1.landmark_list[i].coords[2] - shape2.landmark_list[i].coords[2]) ** 2
-        #shape1.print_landmarks("shape1")
-        #shape2.print_landmarks("shape2")
-        sum_coord = math.sqrt(sum_coord)
-        #print "diff: ", sum
-        if ( sum_coord < 10 ** -10 ):
-            return True
-        return False
-
-    def resistant_fit_superimposition(self):
-        if ( len(self.object_list) == 0 ):
-            raise "No objects to transform!"
-            return
-
-        for mo in self.object_list:
-            mo.move_to_center()
-        average_shape = None
-        previous_average_shape = None
-
-        i = 0
-        while ( True ):
-            i += 1
-            #print "iteration: ", i
-            previous_average_shape = average_shape
-            average_shape = self.get_average_shape()
-            average_shape.rescale_to_unitsize()
-            if ( self.is_same_shape(previous_average_shape, average_shape) and previous_average_shape != None ):
-                break
-            self.set_reference_shape(average_shape)
-            for j in range(len(self.object_list)):
-                self.rotate_resistant_fit_to_reference_shape(j)
-
-    def rotate_vector_2d(self, theta, vec):
-        return self.rotate_vector_3d(theta, vec, 'Z')
-
-    def rotate_vector_3d(self, theta, vec, axis):
-        cos_theta = math.cos(theta)
-        sin_theta = math.sin(theta)
-        r_mx = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
-        if ( axis == 'Z' ):
-            r_mx[0][0] = cos_theta
-            r_mx[0][1] = sin_theta
-            r_mx[1][0] = -1 * sin_theta
-            r_mx[1][1] = cos_theta
-        elif ( axis == 'Y' ):
-            r_mx[0][0] = cos_theta
-            r_mx[0][2] = sin_theta
-            r_mx[2][0] = -1 * sin_theta
-            r_mx[2][2] = cos_theta
-        elif ( axis == 'X' ):
-            r_mx[1][1] = cos_theta
-            r_mx[1][2] = sin_theta
-            r_mx[2][1] = -1 * sin_theta
-            r_mx[2][2] = cos_theta
-
-        x_rotated = vec[0] * r_mx[0][0] + vec[1] * r_mx[1][0] + vec[2] * r_mx[2][0]
-        y_rotated = vec[0] * r_mx[0][1] + vec[1] * r_mx[1][1] + vec[2] * r_mx[2][1]
-        z_rotated = vec[0] * r_mx[0][2] + vec[1] * r_mx[1][2] + vec[2] * r_mx[2][2]
-        vec[0] = x_rotated
-        vec[1] = y_rotated
-        vec[2] = z_rotated
-        return vec
-
-    def rotate_resistant_fit_to_reference_shape(self, object_index):
-        num_obj = len(self.object_list)
-        if ( num_obj == 0 or num_obj - 1 < object_index  ):
-            return
-
-        target_shape = self.object_list[object_index]
-        nlandmarks = len(target_shape.landmark_list)
-        #target_shape = numpy.zeros((nlandmarks,3))
-        reference_shape = self.reference_shape
-
-        #rotation_matrix = self.rotation_matrix( reference_shape, target_shape )
-
-        #rotated_shape = numpy.transpose( numpy.dot( rotation_matrix, numpy.transpose( target_shape ) ) )
-
-        # obtain scale factor using repeated median
-        landmark_count = len(reference_shape.landmark_list)
-        inner_tau_array = []
-        outer_tau_array = []
-        for i in range(landmark_count - 1):
-            for j in range(i + 1, landmark_count):
-                target_distance = math.sqrt(
-                    ( target_shape.landmark_list[i].coords[0] - target_shape.landmark_list[j].coords[0] ) ** 2 + \
-                    ( target_shape.landmark_list[i].coords[1] - target_shape.landmark_list[j].coords[1] ) ** 2 + \
-                    ( target_shape.landmark_list[i].coords[2] - target_shape.landmark_list[j].coords[2] ) ** 2)
-                reference_distance = math.sqrt(
-                    ( reference_shape.landmark_list[i].coords[0] - reference_shape.landmark_list[j].coords[0] ) ** 2 + \
-                    ( reference_shape.landmark_list[i].coords[1] - reference_shape.landmark_list[j].coords[1] ) ** 2 + \
-                    ( reference_shape.landmark_list[i].coords[2] - reference_shape.landmark_list[j].coords[2] ) ** 2)
-                tau = reference_distance / target_distance
-                inner_tau_array.append(tau)
-                median_index = self.get_median_index(inner_tau_array)
-            #       print median_index
-            #print "tau: ", inner_tau_array
-            outer_tau_array.append(inner_tau_array[median_index])
-            inner_tau_array = []
-        median_index = self.get_median_index(outer_tau_array)
-        #print "tau: ", outer_tau_array
-        tau_final = outer_tau_array[median_index]
-
-        # rescale to scale factor
-        #print "index:", object_index
-        #print "scale factor:", tau_final
-        #target_shape.print_landmarks("before rescale")
-        target_shape.rescale(tau_final)
-        #target_shape.print_landmarks("after rescale")
-        #exit
-
-        # obtain rotation angle using repeated median
-        inner_theta_array = []
-        outer_theta_array = []
-        inner_vector_array = []
-        outer_vector_array = []
-        for i in range(landmark_count - 1):
-            for j in range(i + 1, landmark_count):
-                # get vector
-                target_vector = numpy.array([target_shape.landmark_list[i].coords[0] - target_shape.landmark_list[j].coords[0],
-                                             target_shape.landmark_list[i].coords[1] - target_shape.landmark_list[j].coords[1],
-                                             target_shape.landmark_list[i].coords[2] - target_shape.landmark_list[j].coords[2]])
-                reference_vector = numpy.array([reference_shape.landmark_list[i].coords[0] - reference_shape.landmark_list[j].coords[0],
-                                             reference_shape.landmark_list[i].coords[1] - reference_shape.landmark_list[j].coords[1],
-                                             reference_shape.landmark_list[i].coords[2] - reference_shape.landmark_list[j].coords[2]])
-                #       cos_val = ( target_vector[0] * reference_vector[0] + \
-                #                   target_vector[1] * reference_vector[1] + \
-                #                   target_vector[2] * reference_vector[2] ) \
-                #                  / \
-                #                  ( math.sqrt( target_vector[0] ** 2 + target_vector[1]**2 + target_vector[2]**2 ) * \
-                #                    math.sqrt( reference_vector[0] ** 2 + reference_vector[1]**2 + reference_vector[2]**2 ) )
-                #        if( cos_val > 1.0 ):
-                #          print "cos_val 1: ", cos_val
-                #          print target_vector
-                #          print reference_vector
-                #          print math.acos( cos_val )
-                #          cos_val = 1.0
-                cos_val = numpy.vdot(target_vector, reference_vector) / numpy.linalg.norm(
-                    target_vector) * numpy.linalg.norm(reference_vector)
-                #        if( cos_val > 1.0 ):
-                #          print "cos_val 2: ", cos_val
-                #          cos_val = 1.0
-                #        try:
-                #          if( cos_val == 1.0 ):
-                #            theta = 0.0
-                #          else:
-                theta = math.acos(cos_val)
-                #        except ValueError:
-                #          print "acos value error"
-                #          theta = 0.0
-                inner_theta_array.append(theta)
-                inner_vector_array.append(numpy.array([target_vector, reference_vector]))
-                #print inner_vector_array[-1]
-            median_index = self.get_median_index(inner_theta_array)
-            #      print inner_vector_array[median_index]
-            outer_theta_array.append(inner_theta_array[median_index])
-            outer_vector_array.append(inner_vector_array[median_index])
-            inner_theta_array = []
-            inner_vector_array = []
-        median_index = self.get_median_index(outer_theta_array)
-        # theta_final = outer_theta_array[median_index]
-        vector_final = outer_vector_array[median_index]
-        #    print vector_final
-
-        target_shape = numpy.zeros((1, 3))
-        reference_shape = numpy.zeros((1, 3))
-        #print vector_final
-        target_shape[0] = vector_final[0]
-        reference_shape[0] = vector_final[1]
-
-        rotation_matrix = self.get_vector_rotation_matrix(vector_final[1], vector_final[0])
-
-        #rotation_matrix = self.rotation_matrix( reference_shape, target_shape )
-        #print reference_shape
-        #print target_shape
-        #rotated_shape = numpy.transpose( numpy.dot( rotation_matrix, numpy.transpose( target_shape ) ) )
-        #print rotated_shape
-        #exit
-        target_shape = numpy.zeros((nlandmarks, 3))
-        i = 0
-        for lm in ( self.object_list[object_index].landmark_list ):
-            target_shape[i] = lm.coords
-            i += 1
-
-        reference_shape = numpy.zeros((nlandmarks, 3))
-        i = 0
-        for lm in ( self.reference_shape.landmark_list ):
-            reference_shape[i] = lm.coords
-            i += 1
-
-        rotated_shape = numpy.transpose(numpy.dot(rotation_matrix, numpy.transpose(target_shape)))
-
-        #print "reference: ", reference_shape[0]
-        #print "target: ", target_shape[0], numpy.linalg.norm(target_shape[0])
-        #print "rotation: ", rotation_matrix
-        #print "rotated: ", rotated_shape[0], numpy.linalg.norm(rotated_shape[0])
-        #print "determinant: ", numpy.linalg.det( rotation_matrix )
-
-        i = 0
-        for lm in ( self.object_list[object_index].landmark_list ):
-            lm.coords = [ rotated_shape[i, 0], rotated_shape[i, 1], rotated_shape[i, 2] ]
-            i += 1
-        if ( object_index == 0 ):
-            pass
-            #self.reference_shape.print_landmarks("ref:")
-            #self.objects[object_index].print_landmarks(str(object_index))
-            #print "reference: ", reference_shape[0]
-            #print "target: ", target_shape[0], numpy.linalg.norm(target_shape[0])
-            #print "rotation: ", rotation_matrix
-            #print "rotated: ", rotated_shape[0], numpy.linalg.norm(rotated_shape[0])
-            #print "determinant: ", numpy.linalg.det( rotation_matrix )
-
-    def get_vector_rotation_matrix(self, ref, target):
-        ( x, y, z ) = ( 0, 1, 2 )
-        #print ref
-        #print target
-        #print "0 ref", ref
-        #print "0 target", target
-
-        ref_1 = ref
-        ref_1[z] = 0
-        cos_val = ref[x] / math.sqrt(ref[x] ** 2 + ref[z] ** 2)
-        theta1 = math.acos(cos_val)
-        if ( ref[z] < 0 ):
-            theta1 = theta1 * -1
-        ref = self.rotate_vector_3d(-1 * theta1, ref, 'Y')
-        target = self.rotate_vector_3d(-1 * theta1, target, 'Y')
-
-        #print "1 ref", ref
-        #print "1 target", target
-
-        cos_val = ref[x] / math.sqrt(ref[x] ** 2 + ref[y] ** 2)
-        theta2 = math.acos(cos_val)
-        if ( ref[y] < 0 ):
-            theta2 = theta2 * -1
-        ref = self.rotate_vector_2d(-1 * theta2, ref)
-        target = self.rotate_vector_2d(-1 * theta2, target)
-
-        #print "2 ref", ref
-        #print "2 target", target
-
-        cos_val = target[x] / math.sqrt(( target[x] ** 2 + target[z] ** 2 ))
-        theta1 = math.acos(cos_val)
-        if ( target[z] < 0 ):
-            theta1 = theta1 * -1
-        target = self.rotate_vector_3d(-1 * theta1, target, 'Y')
-
-        #print "3 ref", ref
-        #print "3 target", target
-
-        cos_val = target[x] / math.sqrt(( target[x] ** 2 + target[y] ** 2 ))
-        theta2 = math.acos(cos_val)
-        if ( target[y] < 0 ):
-            theta2 = theta2 * -1
-        target = self.rotate_vector_2d(-1 * theta2, target)
-
-        #print "4 ref", ref
-        #print "4 target", target
-
-        r_mx1 = numpy.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
-        r_mx2 = numpy.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
-        #print "shape:", r_mx1.shape
-        #print "r_mx1", r_mx1
-        #print "theta1", theta1
-        #print "cos theta1", math.cos( theta1 )
-        #print "sin theta1", math.sin( theta1 )
-        #print "r_mx2", r_mx2
-        #print "theta2", theta2
-        r_mx1[0][0] = math.cos(theta1)
-        r_mx1[0][2] = math.sin(theta1)
-        r_mx1[2][0] = math.sin(theta1) * -1
-        r_mx1[2][2] = math.cos(theta1)
-
-        #print "r_mx1", r_mx1
-        #print "theta1", theta1
-        #print "r_mx2", r_mx2
-        #print "theta2", theta2
-
-        r_mx2[0][0] = math.cos(theta2)
-        r_mx2[0][1] = math.sin(theta2)
-        r_mx2[1][0] = math.sin(theta2) * -1
-        r_mx2[1][1] = math.cos(theta2)
-
-        #print "r_mx1", r_mx1
-        #print "theta1", theta1
-        #print "r_mx2", r_mx2
-        #print "theta2", theta2
-
-        rotation_matrix = numpy.dot(r_mx1, r_mx2)
-        return rotation_matrix
-
-
-    def get_median_index(self, arr):
-        arr.sort()
-        len_arr = len(arr)
-        if ( len_arr == 0 ):
-            return -1
-        half_len = int(math.floor(len_arr / 2.0))
-        return half_len
 
 
 #    if( half_len == len_arr ):
@@ -652,7 +200,7 @@ class MdPlotter(wx.Window):
 
 class ModanDatasetViewer(wx.Dialog):
     def __init__(self, parent, id=-1):
-        wx.Dialog.__init__(self, parent, -1, "Analysis", size=DIALOG_SIZE)
+        wx.Dialog.__init__(self, parent, id, "Analysis", size=CONST['DIALOG_SIZE'])
 
         panel = wx.Panel(self, -1)
 
@@ -661,26 +209,25 @@ class ModanDatasetViewer(wx.Dialog):
         self.auto_rotate = False
         self.show_wireframe = True
         self.show_meanshape = True
-        self.superimposition_method = IDX_GLS
+        self.superimposition_method = CONST['IDX_GLS']
         self.xaxis_pc_idx = 1
         self.yaxis_pc_idx = 2
         #self.superimposition = ID_RD_PROCRUSTES
 
-
         self.ThreeDViewer = MdCanvas(panel)
         self.ThreeDViewer.SetMinSize((400, 400))
         self.ResultViewer = wx.Notebook(panel)
-        self.eigenvalue_listctrl = wx.ListCtrl(self.ResultViewer, ID_EIGENVALUE_LISTCTRL, style=wx.LC_REPORT)
+        self.eigenvalue_listctrl = wx.ListCtrl(self.ResultViewer, CONTROL_ID['ID_EIGENVALUE_LISTCTRL'], style=wx.LC_REPORT)
         self.eigenvalue_listctrl.InsertColumn(0, 'PC', width=40)
         self.eigenvalue_listctrl.InsertColumn(1, 'Eigen Val.', width=100)
         self.eigenvalue_listctrl.InsertColumn(2, 'Perct.', width=100)
-        self.loading_listctrl = wx.ListCtrl(self.ResultViewer, ID_LOADING_LISTCTRL, style=wx.LC_REPORT)
+        self.loading_listctrl = wx.ListCtrl(self.ResultViewer, CONTROL_ID['ID_LOADING_LISTCTRL'], style=wx.LC_REPORT)
         self.loading_listctrl_initialized = False
-        self.coordinates_listctrl = wx.ListCtrl(self.ResultViewer, ID_FINALCOORDINATES_LISTCTRL, style=wx.LC_REPORT)
+        self.coordinates_listctrl = wx.ListCtrl(self.ResultViewer, CONTROL_ID['ID_FINALCOORDINATES_LISTCTRL'], style=wx.LC_REPORT)
         self.coordinates_listctrl_initialized = False
         #self.rawdata_listctrl = wx.ListCtrl( self.ResultViewer, ID_RAWDATA_LISTCTRL, style=wx.LC_REPORT)
         #self.rawdata_listctrl_initialized = False
-        self.superimposed_listctrl = wx.ListCtrl(self.ResultViewer, ID_SUPERIMPOSED_LISTCTRL, style=wx.LC_REPORT)
+        self.superimposed_listctrl = wx.ListCtrl(self.ResultViewer, CONTROL_ID['ID_SUPERIMPOSED_LISTCTRL'], style=wx.LC_REPORT)
         self.superimposed_listctrl_initialized = False
 
         self.PCAViewer = PlotCanvas(self.ResultViewer)
@@ -701,11 +248,12 @@ class ModanDatasetViewer(wx.Dialog):
         self.ResultViewer.AddPage(self.coordinates_listctrl, "Coordinates")
 
         if use_mplot:
+            pass
             #self.MplotViewer = wxmpl.PlotPanel( self.ResultViewer, -1 )
-            self.MplotViewer.SetMinSize((400, 400))
+            #self.MplotViewer.SetMinSize((400, 400))
             #self.Bind( wxmpl.EVT_POINT, self.OnPoint , self.MplotViewer )
             #wxmpl.EVT_POINT(self, self.MplotViewer.GetId(), self.OnPoint)
-            self.ResultViewer.AddPage(self.MplotViewer, "Mplot")
+            #self.ResultViewer.AddPage(self.MplotViewer, "Mplot")
             #self.MplotViewer.mpl_connect('pick_event', self.OnPick)
         self.ResultViewer.SetMinSize((400, 400))
 
@@ -718,14 +266,14 @@ class ModanDatasetViewer(wx.Dialog):
             self.pc_list.append('PC' + str(i + 1))
 
         self.xAxisLabel = wx.StaticText(panel, -1, 'X Axis', style=wx.ALIGN_RIGHT)
-        self.xAxisCombo = wx.ComboBox(panel, ID_XAXIS_COMBO, "PC1", (15, 30), wx.DefaultSize, self.pc_list,
+        self.xAxisCombo = wx.ComboBox(panel, CONTROL_ID['ID_XAXIS_COMBO'], "PC1", (15, 30), wx.DefaultSize, self.pc_list,
                                       wx.CB_DROPDOWN)
         self.yAxisLabel = wx.StaticText(panel, -1, 'Y Axis', style=wx.ALIGN_RIGHT)
-        self.yAxisCombo = wx.ComboBox(panel, ID_YAXIS_COMBO, "PC2", (15, 30), wx.DefaultSize, self.pc_list,
+        self.yAxisCombo = wx.ComboBox(panel, CONTROL_ID['ID_YAXIS_COMBO'], "PC2", (15, 30), wx.DefaultSize, self.pc_list,
                                       wx.CB_DROPDOWN)
 
-        self.Bind(wx.EVT_COMBOBOX, self.OnXAxis, id=ID_XAXIS_COMBO)
-        self.Bind(wx.EVT_COMBOBOX, self.OnYAxis, id=ID_YAXIS_COMBO)
+        self.Bind(wx.EVT_COMBOBOX, self.OnXAxis, id=CONTROL_ID['ID_XAXIS_COMBO'])
+        self.Bind(wx.EVT_COMBOBOX, self.OnYAxis, id=CONTROL_ID['ID_YAXIS_COMBO'])
         #self.zAxisLabel = wx.StaticText( panel, -1, 'Z Axis', style=wx.ALIGN_RIGHT )
         #self.zAxisCombo = wx.ComboBox( panel, ID_ZAXIS_COMBO, "PC3", (15,30),wx.DefaultSize, self.pc_list, wx.CB_DROPDOWN )
         axesSizer = wx.BoxSizer()
@@ -736,14 +284,14 @@ class ModanDatasetViewer(wx.Dialog):
         #axesSizer.Add( self.zAxisLabel, wx.EXPAND )
         #axesSizer.Add( self.zAxisCombo, wx.EXPAND )
 
-        self.chkAutoRotate = wx.CheckBox(panel, ID_CHK_AUTO_ROTATE, "Auto Rotate")
-        self.chkShowIndex = wx.CheckBox(panel, ID_CHK_SHOW_INDEX, "Show Index")
-        self.chkShowWireframe = wx.CheckBox(panel, ID_CHK_SHOW_WIREFRAME, "Show Wireframe")
-        self.chkShowMeanshape = wx.CheckBox(panel, ID_CHK_SHOW_MEANSHAPE, "Show Mean Shape")
-        self.Bind(wx.EVT_CHECKBOX, self.ToggleAutoRotate, id=ID_CHK_AUTO_ROTATE)
-        self.Bind(wx.EVT_CHECKBOX, self.ToggleShowIndex, id=ID_CHK_SHOW_INDEX)
-        self.Bind(wx.EVT_CHECKBOX, self.ToggleShowWireframe, id=ID_CHK_SHOW_WIREFRAME)
-        self.Bind(wx.EVT_CHECKBOX, self.ToggleShowMeanshape, id=ID_CHK_SHOW_MEANSHAPE)
+        self.chkAutoRotate = wx.CheckBox(panel, CONTROL_ID['ID_CHK_AUTO_ROTATE'], "Auto Rotate")
+        self.chkShowIndex = wx.CheckBox(panel, CONTROL_ID['ID_CHK_SHOW_INDEX'], "Show Index")
+        self.chkShowWireframe = wx.CheckBox(panel, CONTROL_ID['ID_CHK_SHOW_WIREFRAME'], "Show Wireframe")
+        self.chkShowMeanshape = wx.CheckBox(panel, CONTROL_ID['ID_CHK_SHOW_MEANSHAPE'], "Show Mean Shape")
+        self.Bind(wx.EVT_CHECKBOX, self.ToggleAutoRotate, id=CONTROL_ID['ID_CHK_AUTO_ROTATE'])
+        self.Bind(wx.EVT_CHECKBOX, self.ToggleShowIndex, id=CONTROL_ID['ID_CHK_SHOW_INDEX'])
+        self.Bind(wx.EVT_CHECKBOX, self.ToggleShowWireframe, id=CONTROL_ID['ID_CHK_SHOW_WIREFRAME'])
+        self.Bind(wx.EVT_CHECKBOX, self.ToggleShowMeanshape, id=CONTROL_ID['ID_CHK_SHOW_MEANSHAPE'])
         self.chkAutoRotate.SetValue(self.auto_rotate)
         self.chkShowWireframe.SetValue(self.show_wireframe)
         self.chkShowIndex.SetValue(self.show_index)
@@ -755,17 +303,17 @@ class ModanDatasetViewer(wx.Dialog):
         self.checkboxSizer.Add(self.chkShowWireframe, wx.EXPAND)
         self.checkboxSizer.Add(self.chkShowMeanshape, wx.EXPAND)
 
-        self.testButton = wx.Button(panel, ID_ANALYZE_BUTTON, 'Analyze')
+        self.testButton = wx.Button(panel, CONTROL_ID['ID_ANALYZE_BUTTON'], 'Analyze')
         self.cvaButton= wx.Button(panel, -1, 'CVA')
         self.copyButton = wx.Button(panel, -1, 'Copy')
-        self.Bind(wx.EVT_BUTTON, self.OnAnalyze, id=ID_ANALYZE_BUTTON)
+        self.Bind(wx.EVT_BUTTON, self.OnAnalyze, id=CONTROL_ID['ID_ANALYZE_BUTTON'])
         self.Bind(wx.EVT_BUTTON, self.OnCVA, self.cvaButton)
         self.Bind(wx.EVT_BUTTON, self.OnCopy, self.copyButton)
 
         radioList = ["Bookstein", "SBR", "Procrustes (GLS)", "Resistant fit"]
-        self.rdSuperimposition = wx.RadioBox(panel, ID_RADIO_SUPERIMPOSITION, "Superimposition Method",
+        self.rdSuperimposition = wx.RadioBox(panel, CONTROL_ID['ID_RADIO_SUPERIMPOSITION'], "Superimposition Method",
                                              choices=radioList, style=wx.RA_VERTICAL)
-        self.Bind(wx.EVT_RADIOBOX, self.OnSuperimposition, id=ID_RADIO_SUPERIMPOSITION)
+        self.Bind(wx.EVT_RADIOBOX, self.OnSuperimposition, id=CONTROL_ID['ID_RADIO_SUPERIMPOSITION'])
         self.rdSuperimposition.SetSelection(2)
 
 
@@ -783,7 +331,7 @@ class ModanDatasetViewer(wx.Dialog):
         il = wx.ImageList(16, 16, True)
         il_max = il.Add(wx.Bitmap("icon/visible.png", wx.BITMAP_TYPE_PNG))
         il_max = il.Add(wx.Bitmap("icon/invisible.png", wx.BITMAP_TYPE_PNG))
-        self.object_listctrl = wx.ListCtrl(panel, ID_OBJECT_LISTCTRL, style=wx.LC_REPORT)
+        self.object_listctrl = wx.ListCtrl(panel, CONTROL_ID['ID_OBJECT_LISTCTRL'], style=wx.LC_REPORT)
         self.object_listctrl.InsertColumn(0, '', width=20)
         self.object_listctrl.InsertColumn(1, 'Name', width=80)
         self.object_listctrl.AssignImageList(il, wx.IMAGE_LIST_SMALL)
@@ -791,9 +339,9 @@ class ModanDatasetViewer(wx.Dialog):
         #self.object_listctrl.InsertColumn(2,'Y', width=landmarkCoordWidth)
         #self.object_listctrl.InsertColumn(3,'Z', width=landmarkCoordWidth)
         self.object_listctrl.SetMinSize((100, 400))
-        self.object_listctrl.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnObjectSelected, id=ID_OBJECT_LISTCTRL)
-        self.object_listctrl.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnObjectSelected, id=ID_OBJECT_LISTCTRL)
-        self.object_listctrl.Bind(wx.EVT_LEFT_DCLICK, self.OnObjectDoubleClick, id=ID_OBJECT_LISTCTRL)
+        self.object_listctrl.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnObjectSelected, id=CONTROL_ID['ID_OBJECT_LISTCTRL'])
+        self.object_listctrl.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnObjectSelected, id=CONTROL_ID['ID_OBJECT_LISTCTRL'])
+        self.object_listctrl.Bind(wx.EVT_LEFT_DCLICK, self.OnObjectDoubleClick, id=CONTROL_ID['ID_OBJECT_LISTCTRL'])
         #self.object_listctrl.Bind(wx.EVT_LEFT_UP, self.OnLeftUp, id=ID_OBJECT_LISTCTRL)
 
 
@@ -860,7 +408,7 @@ class ModanDatasetViewer(wx.Dialog):
             if dlst != []:  #returns [] if none
                 curveNum, legend, pIndex, pointXY, scaledXY, distance = dlst
                 #make up dictionary to pass to my user function (see DrawPointLabel)
-                mDataDict = {"curveNum": curveNum, "legend": legend, "pIndex": pIndex, \
+                mDataDict = {"curveNum": curveNum, "legend": legend, "pIndex": pIndex,
                              "pointXY": pointXY, "scaledXY": scaledXY}
                 #pass dict to update the pointLabel
                 self.PCAViewer.UpdatePointLabel(mDataDict)
@@ -877,7 +425,7 @@ class ModanDatasetViewer(wx.Dialog):
         baseline = self.ThreeDViewer.dataset.get_baseline_points()
 
         self.superimposition_method = method
-        if method == IDX_BOOKSTEIN:
+        if method == CONST['IDX_BOOKSTEIN']:
             #print "bookstein"
             if len(baseline) == 0:
                 wx.MessageBox("Baseline not defined!")
@@ -887,7 +435,7 @@ class ModanDatasetViewer(wx.Dialog):
                 mo.bookstein_registration(baseline)
                 #mo.move_to_center()
             self.ThreeDViewer.dataset.reference_shape = self.ThreeDViewer.dataset.get_average_shape()
-        elif method == IDX_SBR:
+        elif method == CONST['IDX_SBR']:
             #print "sbr"
             if len(baseline) == 0:
                 wx.MessageBox("Baseline not defined!")
@@ -897,11 +445,11 @@ class ModanDatasetViewer(wx.Dialog):
                 mo.sliding_baseline_registration(baseline)
                 #mo.move_to_center()
             self.ThreeDViewer.dataset.reference_shape = self.ThreeDViewer.dataset.get_average_shape()
-        elif method == IDX_GLS:
+        elif method == CONST['IDX_GLS']:
             #print "procrustes"
             self.ThreeDViewer.dataset.procrustes_superimposition()
             self.ThreeDViewer.dataset.reference_shape = self.ThreeDViewer.dataset.get_average_shape()
-        elif method == IDX_RFTRA:
+        elif method == CONST['IDX_RFTRA']:
             #print "resistant fit"
             self.ThreeDViewer.dataset.resistant_fit_superimposition()
             self.ThreeDViewer.dataset.reference_shape = self.ThreeDViewer.dataset.get_average_shape()
@@ -1054,17 +602,18 @@ class ModanDatasetViewer(wx.Dialog):
         m = []
         i = 0
         for obj in self.dataset.object_list:
+            key = ""
             for p in obj.property_list:
                 if p.propertyname_id == self.selected_propertyname_id:
                     key = p.property
-                    x = self.pca.rotated_matrix[i, self.xaxis_pc_idx - 1]
-                    y = self.pca.rotated_matrix[i, self.yaxis_pc_idx - 1]
-                    str_x = str(math.floor(x * 1000 + 0.5) / 1000)
-                    str_y = str(math.floor(y * 1000 + 0.5) / 1000)
-                    #print x, y
-                    i += 1
-                    m.append(PolyMarker([( x, y )], legend=obj.objname + " (" + key + ") (" + str_x + "," + str_y + ")",
-                                        colour=self.group_colors[key], marker=self.group_symbols[key]))
+            x = self.pca.rotated_matrix[i, self.xaxis_pc_idx - 1]
+            y = self.pca.rotated_matrix[i, self.yaxis_pc_idx - 1]
+            str_x = str(math.floor(x * 1000 + 0.5) / 1000)
+            str_y = str(math.floor(y * 1000 + 0.5) / 1000)
+            #print x, y
+            i += 1
+            m.append(PolyMarker([( x, y )], legend=obj.objname + " (" + key + ") (" + str_x + "," + str_y + ")",
+                                colour=self.group_colors[key], marker=self.group_symbols[key]))
         #print m
         #self.PCAViewer.SetEnableLegend(True)
         self.PCAViewer.Draw(PlotGraphics(m, "", "PC" + str(self.xaxis_pc_idx), "PC" + str(self.yaxis_pc_idx)))
@@ -1220,7 +769,7 @@ class ModanDatasetViewer(wx.Dialog):
         print "a"
         self.manova.Analyze()
 
-        return
+        '''
 
         if not use_mplot:
             return
@@ -1242,6 +791,8 @@ class ModanDatasetViewer(wx.Dialog):
             self.MplotViewer.draw()
             #self.MplotViewer.Show()
             self.show_legend = False
+        '''
+        return
 
     def OnPoint(self, event):
         #print "on point"
@@ -1357,7 +908,7 @@ class ModanDatasetViewer(wx.Dialog):
 
     def SetDataset(self, ds):
         wx.BeginBusyCursor()
-        self.dataset = MdDatasetAnalyzer(ds)
+        self.dataset = MdDatasetView(ds)
         try:
             self.dataset.procrustes_superimposition()
         except MdException, e:

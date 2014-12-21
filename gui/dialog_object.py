@@ -14,45 +14,42 @@ from gui.dialog_dataset import ModanDatasetDialog
 from gui.opengltest import MdCanvas, OpenGLTestWin
 from PIL import Image, ImageEnhance
 
-ID_SAVE_BUTTON = 2000
-ID_DELETE_BUTTON = 2001
-ID_CLOSE_BUTTON = 2002
-ID_SHOW_BUTTON = 2003
+CONTROL_ID = {}
+CONTROL_ID['ID_SAVE_BUTTON'] = 2000
+CONTROL_ID['ID_DELETE_BUTTON'] = 2001
+CONTROL_ID['ID_CLOSE_BUTTON'] = 2002
+CONTROL_ID['ID_SHOW_BUTTON'] = 2003
+CONTROL_ID['ID_COMBO_DSNAME'] = 2004
+CONTROL_ID['ID_LM_GRID_CTRL'] = 2010
+CONTROL_ID['ID_LM_PASTE_BUTTON'] = 2011
+CONTROL_ID['ID_LM_ADD_BUTTON'] = 2012
+CONTROL_ID['ID_LM_DELETE_BUTTON'] = 2013
+CONTROL_ID['ID_COORD_ADD_BUTTON'] = 2014
+CONTROL_ID['ID_XCOORD'] = 2015
+CONTROL_ID['ID_YCOORD'] = 2016
+CONTROL_ID['ID_ZCOORD'] = 2017
+CONTROL_ID['ID_IMAGE_LOAD_BUTTON'] = 2018
+CONTROL_ID['ID_LANDMARK_BUTTON'] = 2021
+CONTROL_ID['ID_CALIBRATION_BUTTON'] = 2022
+CONTROL_ID['ID_IMAGE_COPY_BUTTON'] = 2023
+CONTROL_ID['ID_IMAGE_PASTE_BUTTON'] = 2024
+CONTROL_ID['ID_CHK_COORDS_IN_MILLIMETER'] = 2025
+CONTROL_ID['ID_WIREFRAME_BUTTON'] = 2026
+CONTROL_ID['ID_BASELINE_BUTTON'] = 2027
+CONTROL_ID['ID_MISSING_DATA_BUTTON'] = 2028
 
-ID_COMBO_DSNAME = 2004
+CONTROL_ID['ID_CHK_AUTO_ROTATE'] = 2031
+CONTROL_ID['ID_CHK_SHOW_INDEX'] = 2032
+CONTROL_ID['ID_CHK_SHOW_WIREFRAME'] = 2033
+CONTROL_ID['ID_CHK_SHOW_BASELINE'] = 2034
 
-ID_LM_GRID_CTRL = 2010
-ID_LM_PASTE_BUTTON = 2011
-ID_LM_ADD_BUTTON = 2012
-ID_LM_DELETE_BUTTON = 2013
-ID_COORD_ADD_BUTTON = 2014
-ID_XCOORD = 2015
-ID_YCOORD = 2016
-ID_ZCOORD = 2017
-
-ID_IMAGE_LOAD_BUTTON = 2018
-ID_IMAGE_COPY_BUTTON = 2023
-ID_IMAGE_PASTE_BUTTON = 2024
-ID_CHK_COORDS_IN_MILLIMETER = 2025
-
-ID_LANDMARK_BUTTON = 2021
-ID_CALIBRATION_BUTTON = 2022
-ID_WIREFRAME_BUTTON = 2026
-ID_BASELINE_BUTTON = 2027
-ID_MISSING_DATA_BUTTON = 2028
-
-ID_CHK_AUTO_ROTATE = 2031
-ID_CHK_SHOW_INDEX = 2032
-ID_CHK_SHOW_WIREFRAME = 2033
-ID_CHK_SHOW_BASELINE = 2034
-
-ID_LANDMARK_MODE = 4003
-ID_CALIBRATION_MODE = 4004
-ID_LANDMARK_EDIT_MODE = 4005
-ID_WIREFRAME_MODE = 4006
-ID_WIREFRAME_EDIT_MODE = 4007
-ID_BASELINE_MODE = 4008
-ID_BASELINE_EDIT_MODE = 4009
+CONTROL_ID['ID_LANDMARK_MODE'] = 4003
+CONTROL_ID['ID_CALIBRATION_MODE'] = 4004
+CONTROL_ID['ID_LANDMARK_EDIT_MODE'] = 4005
+CONTROL_ID['ID_WIREFRAME_MODE'] = 4006
+CONTROL_ID['ID_WIREFRAME_EDIT_MODE'] = 4007
+CONTROL_ID['ID_BASELINE_MODE'] = 4008
+CONTROL_ID['ID_BASELINE_EDIT_MODE'] = 4009
 
 LM_MISSING_VALUE = -99999
 
@@ -60,6 +57,37 @@ DIALOG_SIZE = wx.Size(1024, 768)
 landmarkSeqWidth = 40
 landmarkCoordWidth = 60
 landmarkCoordHeight = 22
+
+def piltoimage(pil, alpha=True):
+    """Convert PIL Image to wx.Image."""
+    if alpha:
+        #print "alpha 1", clock()
+        image = apply(wx.EmptyImage, pil.size)
+        #print "alpha 2", clock()
+        image.SetData(pil.convert("RGB").tostring())
+        #print "alpha 3", clock()
+        image.SetAlphaData(pil.convert("RGBA").tostring()[3::4])
+        #print "alpha 4", clock()
+    else:
+        #print "no alpha 1", clock()
+        image = wx.EmptyImage(pil.size[0], pil.size[1])
+        #print "no alpha 2", clock()
+        new_image = pil.convert('RGB')
+        #print "no alpha 3", clock()
+        data = new_image.tostring()
+        #print "no alpha 4", clock()
+        image.SetData(data)
+        #print "no alpha 5", clock()
+    #print "pil2img", image.GetWidth(), image.GetHeight()
+    return image
+
+
+def imagetopil(image):
+    """Convert wx.Image to PIL Image."""
+    #print "img2pil", image.GetWidth(), image.GetHeight()
+    pil = Image.new('RGB', (image.GetWidth(), image.GetHeight()))
+    pil.fromstring(image.GetData())
+    return pil
 
 
 class TestDlg(wx.Dialog):
@@ -89,8 +117,8 @@ class TestDlg(wx.Dialog):
         panel.Fit()
 
 
-ID_CALIBRATION_OKAY_BUTTON = 1001
-ID_CALIBRATION_CANCEL_BUTTON = 1002
+CONTROL_ID['ID_CALIBRATION_OKAY_BUTTON'] = 1001
+CONTROL_ID['ID_CALIBRATION_CANCEL_BUTTON'] = 1002
 
 
 class UnitCalibrationDlg(wx.Dialog):
@@ -101,10 +129,9 @@ class UnitCalibrationDlg(wx.Dialog):
         self.length = wx.TextCtrl(panel, -1, '1')
         self.unittext = wx.StaticText(panel, -1, 'mm', style=wx.ALIGN_LEFT)
 
-        self.okButton = wx.Button(panel, ID_CALIBRATION_OKAY_BUTTON, 'OK')
-        self.cancelButton = wx.Button(panel, ID_CALIBRATION_CANCEL_BUTTON, 'Cancel')
-        self.Bind(wx.EVT_BUTTON, self.OnOk, id=ID_CALIBRATION_OKAY_BUTTON)
-        self.Bind(wx.EVT_BUTTON, self.OnCancel, id=ID_CALIBRATION_CANCEL_BUTTON)
+        self.cancelButton = wx.Button(panel, CONTROL_ID['ID_CALIBRATION_CANCEL_BUTTON'], 'Cancel')
+        self.Bind(wx.EVT_BUTTON, self.OnOk, id=CONTROL_ID['ID_CALIBRATION_OKAY_BUTTON'])
+        self.Bind(wx.EVT_BUTTON, self.OnCancel, id=CONTROL_ID['ID_CALIBRATION_CANCEL_BUTTON'])
 
         #x = self.GetSize().width / 2
         #y = self.GetSize().height/ 2
@@ -173,7 +200,7 @@ class ModanImageControl(wx.Window):
         self.show_wireframe = True
         self.show_baseline = False
         self.pixels_per_millimeter = -1
-        self.SetMode(ID_LANDMARK_MODE)
+        self.SetMode(CONTROL_ID['ID_LANDMARK_MODE'])
         self.ClearImage()
         #self.currimg = self.img = self.origimg = wx.EmptyImage(640,480)
         #self.buffer = wx.BitmapFromImage( self.img )
@@ -200,22 +227,22 @@ class ModanImageControl(wx.Window):
     def SetMode(self, mode):
         #print "set mode:", mode
         self.mode = mode
-        if mode == ID_LANDMARK_MODE:
+        if mode == CONTROL_ID['ID_LANDMARK_MODE']:
             self.SetCursor(wx.StockCursor(wx.CURSOR_CROSS))
             self.curr_landmark_idx = -1
-        elif mode == ID_CALIBRATION_MODE:
+        elif mode == CONTROL_ID['ID_CALIBRATION_MODE']:
             self.SetCursor(wx.StockCursor(wx.CURSOR_SIZEWE))
-        elif mode == ID_LANDMARK_EDIT_MODE:
+        elif mode == CONTROL_ID['ID_LANDMARK_EDIT_MODE']:
             self.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
-        elif mode == ID_WIREFRAME_MODE:
+        elif mode == CONTROL_ID['ID_WIREFRAME_MODE']:
             #print "wireframe"
             self.SetCursor(wx.StockCursor(wx.CURSOR_SIZEWE))
-        elif mode == ID_WIREFRAME_EDIT_MODE:
+        elif mode == CONTROL_ID['ID_WIREFRAME_EDIT_MODE']:
             self.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
-        elif mode == ID_BASELINE_MODE:
+        elif mode == CONTROL_ID['ID_BASELINE_MODE']:
             #print "baseline"
             self.SetCursor(wx.StockCursor(wx.CURSOR_SIZEWE))
-        elif mode == ID_BASELINE_EDIT_MODE:
+        elif mode == CONTROL_ID['ID_BASELINE_EDIT_MODE']:
             self.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
         return
 
@@ -246,7 +273,7 @@ class ModanImageControl(wx.Window):
 
     def OnRightDown(self, event):
         # should be a callback function
-        if self.mode == ID_LANDMARK_EDIT_MODE:
+        if self.mode == CONTROL_ID['ID_LANDMARK_EDIT_MODE']:
             confirmDlg = wx.MessageDialog(self, "Delete landmark?", "Modan", wx.YES_NO | wx.YES_DEFAULT)
             ret = confirmDlg.ShowModal()
             if ret != wx.ID_YES:
@@ -261,14 +288,14 @@ class ModanImageControl(wx.Window):
                 lm = self.temp_landmark_list[i]
                 parent.AppendLandmark(MdLandmark(lm.coords))
             self.DrawToBuffer()
-        elif self.mode == ID_WIREFRAME_EDIT_MODE and self.hovering_edge != []:
+        elif self.mode == CONTROL_ID['ID_WIREFRAME_EDIT_MODE'] and self.hovering_edge != []:
             confirmDlg = wx.MessageDialog(self, "Delete this edge?", "Modan", wx.YES_NO | wx.YES_DEFAULT)
             ret = confirmDlg.ShowModal()
             if ret != wx.ID_YES:
                 return
             self.GetParent().GetParent().DeleteWire(self.hovering_edge[0], self.hovering_edge[1])
             self.DrawToBuffer()
-            self.SetMode(ID_WIREFRAME_MODE)
+            self.SetMode(CONTROL_ID['ID_WIREFRAME_MODE'])
         else:
             self.is_dragging_image = True
             self.CaptureMouse()
@@ -293,12 +320,12 @@ class ModanImageControl(wx.Window):
         #print "down"
         if not self.has_image:
             return
-        if self.mode == ID_LANDMARK_MODE:
+        if self.mode == CONTROL_ID['ID_LANDMARK_MODE']:
             if self.img_x < 0 or self.img_y < 0:
                 return
             self.GetParent().GetParent().AppendLandmark(MdLandmark([self.img_x, self.img_y]))
             self.DrawToBuffer()
-        elif self.mode == ID_CALIBRATION_MODE:
+        elif self.mode == CONTROL_ID['ID_CALIBRATION_MODE']:
             self.x, self.y = self.lastx, self.lasty = event.GetPosition()
             self.calib_x1, self.calib_y1 = self.x, self.y
             self.calib_x2, self.calib_y2 = self.x, self.y
@@ -306,15 +333,15 @@ class ModanImageControl(wx.Window):
             self.DrawToBuffer()
             self.is_calibrating = True
             self.CaptureMouse()
-        elif self.mode == ID_LANDMARK_EDIT_MODE:
+        elif self.mode == CONTROL_ID['ID_LANDMARK_EDIT_MODE']:
             self.x, self.y = self.lastx, self.lasty = event.GetPosition()
             self.is_dragging_landmark = True
             self.CaptureMouse()
-        elif self.mode == ID_WIREFRAME_EDIT_MODE:
+        elif self.mode == CONTROL_ID['ID_WIREFRAME_EDIT_MODE']:
             self.x, self.y = self.lastx, self.lasty = event.GetPosition()
             self.is_dragging_wire = True
             self.CaptureMouse()
-        elif self.mode == ID_BASELINE_EDIT_MODE:
+        elif self.mode == CONTROL_ID['ID_BASELINE_EDIT_MODE']:
             self.x, self.y = self.lastx, self.lasty = event.GetPosition()
             hit, lm_idx = self.IsCursorOnLandmark()
             if hit:
@@ -406,7 +433,7 @@ class ModanImageControl(wx.Window):
             calibDlg.Destroy()
             self.DrawToBuffer()
             self.GetParent().GetParent().ApplyCalibrationResult()
-            self.SetMode(ID_LANDMARK_MODE)
+            self.SetMode(CONTROL_ID['ID_LANDMARK_MODE'])
             #self.mode = ID_2D_LANDMARK_MODE
             #self.Refresh(False)
 
@@ -462,15 +489,15 @@ class ModanImageControl(wx.Window):
             #self.calib_x2 = self.x
             #self.calib_y2 = self.y
             #self.DrawToBuffer()
-        elif self.mode == ID_LANDMARK_MODE:
+        elif self.mode == CONTROL_ID['ID_LANDMARK_MODE']:
             hit, lm_idx = self.IsCursorOnLandmark()
             if hit:
-                self.SetMode(ID_LANDMARK_EDIT_MODE)
+                self.SetMode(CONTROL_ID['ID_LANDMARK_EDIT_MODE'])
                 #self.cursor_on_idx = lm_idx
                 self.curr_landmark_idx = lm_idx
                 self.temp_landmark_list = []
                 self.temp_landmark_list[::] = self.GetParent().GetParent().landmark_list[::]
-        elif self.mode == ID_LANDMARK_EDIT_MODE:
+        elif self.mode == CONTROL_ID['ID_LANDMARK_EDIT_MODE']:
 
             if self.is_dragging_landmark:
                 parent = self.GetParent().GetParent()
@@ -484,13 +511,13 @@ class ModanImageControl(wx.Window):
                                               lm.coords[1] + math.floor(( self.y - self.lasty ) / self.zoom + 0.5) ]))
             hit, lm_idx = self.IsCursorOnLandmark()
             if not hit:
-                self.SetMode(ID_LANDMARK_MODE)
+                self.SetMode(CONTROL_ID['ID_LANDMARK_MODE'])
                 self.curr_landmark_idx = -1
-        elif self.mode == ID_WIREFRAME_MODE:
+        elif self.mode == CONTROL_ID['ID_WIREFRAME_MODE']:
             #print "wireframe_mode"
             hit, lm_idx = self.IsCursorOnLandmark()
             if hit:
-                self.SetMode(ID_WIREFRAME_EDIT_MODE)
+                self.SetMode(CONTROL_ID['ID_WIREFRAME_EDIT_MODE'])
                 self.begin_wire_idx = lm_idx
                 self.hovering_edge = []
             else:
@@ -498,13 +525,13 @@ class ModanImageControl(wx.Window):
                 hit, edge = self.IsCursorOnWireframe()
                 #print "result:", hit, edge
                 if hit:
-                    self.SetMode(ID_WIREFRAME_EDIT_MODE)
+                    self.SetMode(CONTROL_ID['ID_WIREFRAME_EDIT_MODE'])
                     self.hovering_edge = edge
                     #print "edge:",edge
                 else:
                     self.hovering_edge = []
                     #self.DrawToBuffer()
-        elif self.mode == ID_WIREFRAME_EDIT_MODE:
+        elif self.mode == CONTROL_ID['ID_WIREFRAME_EDIT_MODE']:
             #print "wireframe_edit_mode"
             hit, lm_idx = self.IsCursorOnLandmark()
             #print hit, lm_idx, self.begin_wire_idx, self.end_wire_idx
@@ -519,7 +546,7 @@ class ModanImageControl(wx.Window):
                     if hit:
                         self.hovering_edge = edge
                     else:
-                        self.SetMode(ID_WIREFRAME_MODE)
+                        self.SetMode(CONTROL_ID['ID_WIREFRAME_MODE'])
                         self.begin_wire_idx = -1
                         # draw dangling wire
             else:
@@ -531,14 +558,14 @@ class ModanImageControl(wx.Window):
                     #to_lm = self.GetParent().GetParent().landmark_list[lm_idx]
                     #self.wire_to_x, self.wire_to_y = self.ImageXYtoScreenXY(to_lm[1],to_lm[2])
                     self.end_wire_idx = lm_idx
-        elif self.mode == ID_BASELINE_MODE:
+        elif self.mode == CONTROL_ID['ID_BASELINE_MODE']:
             hit, lm_idx = self.IsCursorOnLandmark()
             if hit:
-                self.SetMode(ID_BASELINE_EDIT_MODE)
+                self.SetMode(CONTROL_ID['ID_BASELINE_EDIT_MODE'])
                 self.begin_baseline_idx = lm_idx
             else:
                 self.begin_baseline_idx = -1
-        elif self.mode == ID_BASELINE_EDIT_MODE:
+        elif self.mode == CONTROL_ID['ID_BASELINE_EDIT_MODE']:
             hit, lm_idx = self.IsCursorOnLandmark()
             #print hit, lm_idx, self.begin_wire_idx, self.end_wire_idx
             if not hit:
@@ -547,7 +574,7 @@ class ModanImageControl(wx.Window):
                     self.baseline_to_x = self.x
                     self.baseline_to_y = self.y
                 else:
-                    self.SetMode(ID_BASELINE_MODE)
+                    self.SetMode(CONTROL_ID['ID_BASELINE_MODE'])
                     self.baseline_wire_idx = -1
                     # draw dangling wire
             else:
@@ -684,7 +711,7 @@ class ModanImageControl(wx.Window):
         dc.SetTextForeground(wx.BLUE)
         dc.SetPen(wx.Pen("blue", 3))
         if self.is_dragging_baseline:
-            if self.mode == ID_BASELINE_EDIT_MODE and self.begin_baseline_idx >= 0:
+            if self.mode == CONTROL_ID['ID_BASELINE_EDIT_MODE'] and self.begin_baseline_idx >= 0:
                 from_lm = landmark_list[self.begin_baseline_idx - 1]
                 baseline_from_x, baseline_from_y = self.ImageXYtoScreenXY(from_lm.coords[0], from_lm.coords[1])
                 if self.end_baseline_idx >= 0:
@@ -740,7 +767,7 @@ class ModanImageControl(wx.Window):
                     dc_x2, dc_y2 = self.ImageXYtoScreenXY(lm_to[0], lm_to[1])
                     dc.DrawLine(dc_x1, dc_y1, dc_x2, dc_y2)
 
-        if self.mode == ID_WIREFRAME_EDIT_MODE and self.begin_wire_idx >= 0:
+        if self.mode == CONTROL_ID['ID_WIREFRAME_EDIT_MODE'] and self.begin_wire_idx >= 0:
             #print self.begin_wire_idx, self.end_wire_idx
             if self.is_dragging_wire:
                 from_lm = self.GetParent().GetParent().landmark_list[self.begin_wire_idx - 1]
@@ -1017,38 +1044,6 @@ class ModanImageControl(wx.Window):
         #self.Refresh(True)
 
 
-def piltoimage(pil, alpha=True):
-    """Convert PIL Image to wx.Image."""
-    if alpha:
-        #print "alpha 1", clock()
-        image = apply(wx.EmptyImage, pil.size)
-        #print "alpha 2", clock()
-        image.SetData(pil.convert("RGB").tostring())
-        #print "alpha 3", clock()
-        image.SetAlphaData(pil.convert("RGBA").tostring()[3::4])
-        #print "alpha 4", clock()
-    else:
-        #print "no alpha 1", clock()
-        image = wx.EmptyImage(pil.size[0], pil.size[1])
-        #print "no alpha 2", clock()
-        new_image = pil.convert('RGB')
-        #print "no alpha 3", clock()
-        data = new_image.tostring()
-        #print "no alpha 4", clock()
-        image.SetData(data)
-        #print "no alpha 5", clock()
-    #print "pil2img", image.GetWidth(), image.GetHeight()
-    return image
-
-
-def imagetopil(image):
-    """Convert wx.Image to PIL Image."""
-    #print "img2pil", image.GetWidth(), image.GetHeight()
-    pil = Image.new('RGB', (image.GetWidth(), image.GetHeight()))
-    pil.fromstring(image.GetData())
-    return pil
-
-
 class ModanObjectDialog(wx.Dialog):
     def __init__(self, parent, id):
         wx.Dialog.__init__(self, parent, id, 'MdObject', size=DIALOG_SIZE,
@@ -1107,14 +1102,14 @@ class ModanObjectDialog(wx.Dialog):
 
         # 3D viewer
         self.ThreeDViewer = MdCanvas(panel)
-        self.chkAutoRotate = wx.CheckBox(panel, ID_CHK_AUTO_ROTATE, "Auto Rotate")
-        self.chkShowIndex = wx.CheckBox(panel, ID_CHK_SHOW_INDEX, "Show Index")
-        self.chkShowWireframe = wx.CheckBox(panel, ID_CHK_SHOW_WIREFRAME, "Show Wireframe")
-        self.chkShowBaseline = wx.CheckBox(panel, ID_CHK_SHOW_BASELINE, "Show Baseline")
-        self.Bind(wx.EVT_CHECKBOX, self.ToggleAutoRotate, id=ID_CHK_AUTO_ROTATE)
-        self.Bind(wx.EVT_CHECKBOX, self.ToggleShowIndex, id=ID_CHK_SHOW_INDEX)
-        self.Bind(wx.EVT_CHECKBOX, self.ToggleShowWireframe, id=ID_CHK_SHOW_WIREFRAME)
-        self.Bind(wx.EVT_CHECKBOX, self.ToggleShowBaseline, id=ID_CHK_SHOW_BASELINE)
+        self.chkAutoRotate = wx.CheckBox(panel, CONTROL_ID['ID_CHK_AUTO_ROTATE'], "Auto Rotate")
+        self.chkShowIndex = wx.CheckBox(panel, CONTROL_ID['ID_CHK_SHOW_INDEX'], "Show Index")
+        self.chkShowWireframe = wx.CheckBox(panel, CONTROL_ID['ID_CHK_SHOW_WIREFRAME'], "Show Wireframe")
+        self.chkShowBaseline = wx.CheckBox(panel, CONTROL_ID['ID_CHK_SHOW_BASELINE'], "Show Baseline")
+        self.Bind(wx.EVT_CHECKBOX, self.ToggleAutoRotate, id=CONTROL_ID['ID_CHK_AUTO_ROTATE'])
+        self.Bind(wx.EVT_CHECKBOX, self.ToggleShowIndex, id=CONTROL_ID['ID_CHK_SHOW_INDEX'])
+        self.Bind(wx.EVT_CHECKBOX, self.ToggleShowWireframe, id=CONTROL_ID['ID_CHK_SHOW_WIREFRAME'])
+        self.Bind(wx.EVT_CHECKBOX, self.ToggleShowBaseline, id=CONTROL_ID['ID_CHK_SHOW_BASELINE'])
         self.chkAutoRotate.SetValue(self.auto_rotate)
         self.chkShowWireframe.SetValue(self.show_wireframe)
         self.chkShowBaseline.SetValue(self.show_baseline)
@@ -1128,63 +1123,63 @@ class ModanObjectDialog(wx.Dialog):
         self.Bind(wx.EVT_SCROLL, self.OnSlide)
         #self.twoDZoomButton = wx.Button(panel, ID_ZOOM_BUTTON, 'Zoom')
         #self.twoDPanButton = wx.Button(panel, ID_2D_PAN_BUTTON, 'Pan')
-        self.landmarkButton = wx.Button(panel, ID_LANDMARK_BUTTON, 'Landmark')
-        self.missingDataButton = wx.Button(panel, ID_MISSING_DATA_BUTTON, 'Missing')
-        self.calibrationButton = wx.Button(panel, ID_CALIBRATION_BUTTON, 'Calib.')
-        self.wireframeButton = wx.Button(panel, ID_WIREFRAME_BUTTON, 'Wireframe')
-        self.baselineButton = wx.Button(panel, ID_BASELINE_BUTTON, 'Baseline')
+        self.landmarkButton = wx.Button(panel, CONTROL_ID['ID_LANDMARK_BUTTON'], 'Landmark')
+        self.missingDataButton = wx.Button(panel, CONTROL_ID['ID_MISSING_DATA_BUTTON'], 'Missing')
+        self.calibrationButton = wx.Button(panel, CONTROL_ID['ID_CALIBRATION_BUTTON'], 'Calib.')
+        self.wireframeButton = wx.Button(panel, CONTROL_ID['ID_WIREFRAME_BUTTON'], 'Wireframe')
+        self.baselineButton = wx.Button(panel, CONTROL_ID['ID_BASELINE_BUTTON'], 'Baseline')
 
-        self.imageLoadButton = wx.Button(panel, ID_IMAGE_LOAD_BUTTON, 'Load')
-        self.imageCopyButton = wx.Button(panel, ID_IMAGE_COPY_BUTTON, 'Copy')
-        self.imagePasteButton = wx.Button(panel, ID_IMAGE_PASTE_BUTTON, 'Paste')
+        self.imageLoadButton = wx.Button(panel, CONTROL_ID['ID_IMAGE_LOAD_BUTTON'], 'Load')
+        self.imageCopyButton = wx.Button(panel, CONTROL_ID['ID_IMAGE_COPY_BUTTON'], 'Copy')
+        self.imagePasteButton = wx.Button(panel, CONTROL_ID['ID_IMAGE_PASTE_BUTTON'], 'Paste')
 
         #self.Bind( wx.EVT_BUTTON, self.On2DZoom, id=ID_2D_ZOOM_BUTTON )
         #self.Bind( wx.EVT_BUTTON, self.On2DPan, id=ID_2D_PAN_BUTTON )
-        self.Bind(wx.EVT_BUTTON, self.OnLandmarkMode, id=ID_LANDMARK_BUTTON)
-        self.Bind(wx.EVT_BUTTON, self.OnCalibrationMode, id=ID_CALIBRATION_BUTTON)
-        self.Bind(wx.EVT_BUTTON, self.OnBaselineMode, id=ID_BASELINE_BUTTON)
-        self.Bind(wx.EVT_BUTTON, self.OnMissingData, id=ID_MISSING_DATA_BUTTON)
-        self.Bind(wx.EVT_BUTTON, self.OnWireframeMode, id=ID_WIREFRAME_BUTTON)
+        self.Bind(wx.EVT_BUTTON, self.OnLandmarkMode, id=CONTROL_ID['ID_LANDMARK_BUTTON'])
+        self.Bind(wx.EVT_BUTTON, self.OnCalibrationMode, id=CONTROL_ID['ID_CALIBRATION_BUTTON'])
+        self.Bind(wx.EVT_BUTTON, self.OnBaselineMode, id=CONTROL_ID['ID_BASELINE_BUTTON'])
+        self.Bind(wx.EVT_BUTTON, self.OnMissingData, id=CONTROL_ID['ID_MISSING_DATA_BUTTON'])
+        self.Bind(wx.EVT_BUTTON, self.OnWireframeMode, id=CONTROL_ID['ID_WIREFRAME_BUTTON'])
 
-        self.Bind(wx.EVT_BUTTON, self.OnImageLoad, id=ID_IMAGE_LOAD_BUTTON)
-        self.Bind(wx.EVT_BUTTON, self.OnImageCopy, id=ID_IMAGE_COPY_BUTTON)
-        self.Bind(wx.EVT_BUTTON, self.OnImagePaste, id=ID_IMAGE_PASTE_BUTTON)
+        self.Bind(wx.EVT_BUTTON, self.OnImageLoad, id=CONTROL_ID['ID_IMAGE_LOAD_BUTTON'])
+        self.Bind(wx.EVT_BUTTON, self.OnImageCopy, id=CONTROL_ID['ID_IMAGE_COPY_BUTTON'])
+        self.Bind(wx.EVT_BUTTON, self.OnImagePaste, id=CONTROL_ID['ID_IMAGE_PASTE_BUTTON'])
 
-        self.chkCoordsInMillimeter = wx.CheckBox(panel, ID_CHK_COORDS_IN_MILLIMETER, "Coords. in mm")
-        self.Bind(wx.EVT_CHECKBOX, self.ToggleCoordsInMillimeter, id=ID_CHK_COORDS_IN_MILLIMETER)
+        self.chkCoordsInMillimeter = wx.CheckBox(panel, CONTROL_ID['ID_CHK_COORDS_IN_MILLIMETER'], "Coords. in mm")
+        self.Bind(wx.EVT_CHECKBOX, self.ToggleCoordsInMillimeter, id=CONTROL_ID['ID_CHK_COORDS_IN_MILLIMETER'])
         self.chkCoordsInMillimeter.SetValue(self.coords_in_millimeter)
 
         """ Landmarks : replace with Grid control or its subclass later"""
         self.landmarkLabel = wx.StaticText(panel, -1, 'Landmarks', style=wx.ALIGN_CENTER)
-        self.forms['landmark_list'] = wx.ListCtrl(panel, ID_LM_GRID_CTRL, style=wx.LC_REPORT)
+        self.forms['landmark_list'] = wx.ListCtrl(panel, CONTROL_ID['ID_LM_GRID_CTRL'], style=wx.LC_REPORT)
         self.forms['landmark_list'].InsertColumn(0, 'X', width=landmarkCoordWidth)
         self.forms['landmark_list'].InsertColumn(1, 'Y', width=landmarkCoordWidth)
         #    self.forms['landmark_list'].InsertColumn(3,'Z', width=landmarkCoordWidth)
-        self.forms['xcoord'] = wx.TextCtrl(panel, id=ID_XCOORD, value='', style=wx.TE_PROCESS_ENTER)
-        self.forms['ycoord'] = wx.TextCtrl(panel, id=ID_YCOORD, value='', style=wx.TE_PROCESS_ENTER)
-        self.forms['zcoord'] = wx.TextCtrl(panel, id=ID_ZCOORD, value='', style=wx.TE_PROCESS_ENTER)
+        self.forms['xcoord'] = wx.TextCtrl(panel, id=CONTROL_ID['ID_XCOORD'], value='', style=wx.TE_PROCESS_ENTER)
+        self.forms['ycoord'] = wx.TextCtrl(panel, id=CONTROL_ID['ID_YCOORD'], value='', style=wx.TE_PROCESS_ENTER)
+        self.forms['zcoord'] = wx.TextCtrl(panel, id=CONTROL_ID['ID_ZCOORD'], value='', style=wx.TE_PROCESS_ENTER)
         self.forms['xcoord'].SetMinSize((landmarkCoordWidth, landmarkCoordHeight ))
         self.forms['ycoord'].SetMinSize((landmarkCoordWidth, landmarkCoordHeight ))
         self.forms['zcoord'].SetMinSize((landmarkCoordWidth, landmarkCoordHeight ))
-        self.coordAddButton = wx.Button(panel, ID_COORD_ADD_BUTTON, 'Add')
+        self.coordAddButton = wx.Button(panel, CONTROL_ID['ID_COORD_ADD_BUTTON'], 'Add')
         self.coordAddButton.SetMinSize(( landmarkSeqWidth, landmarkCoordHeight))
-        self.Bind(wx.EVT_BUTTON, self.AddCoord, id=ID_COORD_ADD_BUTTON)
-        self.Bind(wx.EVT_TEXT_ENTER, self.AddCoord, id=ID_XCOORD)
-        self.Bind(wx.EVT_TEXT_ENTER, self.AddCoord, id=ID_YCOORD)
-        self.Bind(wx.EVT_TEXT_ENTER, self.AddCoord, id=ID_ZCOORD)
+        self.Bind(wx.EVT_BUTTON, self.AddCoord, id=CONTROL_ID['ID_COORD_ADD_BUTTON'])
+        self.Bind(wx.EVT_TEXT_ENTER, self.AddCoord, id=CONTROL_ID['ID_XCOORD'])
+        self.Bind(wx.EVT_TEXT_ENTER, self.AddCoord, id=CONTROL_ID['ID_YCOORD'])
+        self.Bind(wx.EVT_TEXT_ENTER, self.AddCoord, id=CONTROL_ID['ID_ZCOORD'])
 
-        self.forms['landmark_list'].Bind(wx.EVT_LEFT_DCLICK, self.OnDoubleClick, id=ID_LM_GRID_CTRL)
-        self.forms['landmark_list'].Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnLandmarkSelected, id=ID_LM_GRID_CTRL)
-        self.forms['landmark_list'].Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnLandmarkSelected, id=ID_LM_GRID_CTRL)
+        self.forms['landmark_list'].Bind(wx.EVT_LEFT_DCLICK, self.OnDoubleClick, id=CONTROL_ID['ID_LM_GRID_CTRL'])
+        self.forms['landmark_list'].Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnLandmarkSelected, id=CONTROL_ID['ID_LM_GRID_CTRL'])
+        self.forms['landmark_list'].Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnLandmarkSelected, id=CONTROL_ID['ID_LM_GRID_CTRL'])
 
         ## Buttons
-        self.saveButton = wx.Button(panel, ID_SAVE_BUTTON, 'Save')
+        self.saveButton = wx.Button(panel, CONTROL_ID['ID_SAVE_BUTTON'], 'Save')
         #self.showButton = wx.Button(panel, ID_SHOW_BUTTON, 'Show')
-        self.deleteButton = wx.Button(panel, ID_DELETE_BUTTON, 'Delete')
-        self.closeButton = wx.Button(panel, ID_CLOSE_BUTTON, 'Close')
-        self.Bind(wx.EVT_BUTTON, self.OnSave, id=ID_SAVE_BUTTON)
-        self.Bind(wx.EVT_BUTTON, self.OnDelete, id=ID_DELETE_BUTTON)
-        self.Bind(wx.EVT_BUTTON, self.OnClose, id=ID_CLOSE_BUTTON)
+        self.deleteButton = wx.Button(panel, CONTROL_ID['ID_DELETE_BUTTON'], 'Delete')
+        self.closeButton = wx.Button(panel, CONTROL_ID['ID_CLOSE_BUTTON'], 'Close')
+        self.Bind(wx.EVT_BUTTON, self.OnSave, id=CONTROL_ID['ID_SAVE_BUTTON'])
+        self.Bind(wx.EVT_BUTTON, self.OnDelete, id=CONTROL_ID['ID_DELETE_BUTTON'])
+        self.Bind(wx.EVT_BUTTON, self.OnClose, id=CONTROL_ID['ID_CLOSE_BUTTON'])
         #self.Bind(wx.EVT_BUTTON, self.OnShow, id=ID_SHOW_BUTTON)
 
         self.ppmm = -1
@@ -1426,7 +1421,7 @@ class ModanObjectDialog(wx.Dialog):
             self.show_wireframe = True
             self.chkShowWireframe.SetValue(self.show_wireframe)
             self.ToggleShowWireframe(event)
-        self.objectViewer.SetMode(ID_WIREFRAME_MODE)
+        self.objectViewer.SetMode(CONTROL_ID['ID_WIREFRAME_MODE'])
 
         return
 
@@ -1442,15 +1437,15 @@ class ModanObjectDialog(wx.Dialog):
             self.show_baseline = True
             self.chkShowBaseline.SetValue(self.show_baseline)
             self.ToggleShowBaseline(event)
-        self.objectViewer.SetMode(ID_BASELINE_MODE)
+        self.objectViewer.SetMode(CONTROL_ID['ID_BASELINE_MODE'])
         return
 
     def OnLandmarkMode(self, event):
-        self.objectViewer.SetMode(ID_LANDMARK_MODE)
+        self.objectViewer.SetMode(CONTROL_ID['ID_LANDMARK_MODE'])
         return
 
     def OnCalibrationMode(self, event):
-        self.objectViewer.SetMode(ID_CALIBRATION_MODE)
+        self.objectViewer.SetMode(CONTROL_ID['ID_CALIBRATION_MODE'])
         return
 
     def OnImageCopy(self, event):
@@ -1595,10 +1590,11 @@ class ModanObjectDialog(wx.Dialog):
         #self.TwoDViewer.DrawToBuffer()
 
         #self.RefreshLinkList()
-        #mo = self.object.copy()
-        #mo.move_to_center()
+        mo = mdobject.copy()
+        mo.move_to_center()
+
         if mdobject.dataset.dimension == 3:
-            self.ThreeDViewer.SetSingleObject(mdobject.copy())
+            self.ThreeDViewer.SetSingleObject(mo)
         #if self.auto_rotate:
             #self.RefreshThreeDViewer()
             #self.ThreeDViewer.BeginAutoRotate(50)
