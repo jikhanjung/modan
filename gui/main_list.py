@@ -1,11 +1,24 @@
-import wx
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 from gui.niftylist import NiftyVirtualList  # , NiftyListItem
 from gui.dialog_object import ModanObjectDialog
 from gui.dialog_export import ModanExportDialog
 from libpy.modan_dbclass import *
+import re
 from gui.list_menu import MainListMenu
 
+def cmp_nicely( x, y ):
+    convert = lambda text: int(text) if text.isdigit() else text
+    alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ]
+    return cmp( alphanum_key(x), alphanum_key(y))
+
+def sort_nicely( l ):
+    """ Sort the given list in the way that humans expect.
+    """
+    convert = lambda text: int(text) if text.isdigit() else text
+    alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ]
+    l.sort( key=alphanum_key )
 
 WIDTH_ID = 100
 WIDTH_NAME = 200
@@ -79,6 +92,7 @@ class MdObjectList(NiftyVirtualList):
         # print "delete [" + str( mo.id  ) + "]"
         #self.DeleteItem( itemidx )
 
+
     def RefreshList(self, object_id=-1):
 
         self.DeleteAllItems()
@@ -94,12 +108,12 @@ class MdObjectList(NiftyVirtualList):
         self.colsortfunc.append([])
         columnheader = ['Name', 'LM', 'Csize']
         columnwidth = [100, 40, 60]
-        # TODO enhance objname sort: in such case as "specimen 1", 1 should be treated as number, not string.
-        self.colsortfunc[0] = [lambda x, y: cmp(x.objname, y.objname),
+        # TODO enhance objname sort: in such case as "specimen 1", 1 should be treated as number, not string. done 12/21/2014
+        self.colsortfunc[0] = [lambda x, y: cmp_nicely(x.objname, y.objname),
                                lambda x, y: cmp(len(x.landmark_list), len(y.landmark_list)),
                                lambda x, y: cmp(x.get_centroid_size(), y.get_centroid_size())
         ]
-        self.colsortfunc[1] = [lambda y, x: cmp(x.objname, y.objname),
+        self.colsortfunc[1] = [lambda y, x: cmp_nicely(x.objname, y.objname),
                                lambda y, x: cmp(len(x.landmark_list), len(y.landmark_list)),
                                lambda y, x: cmp(x.get_centroid_size(), y.get_centroid_size())
         ]
