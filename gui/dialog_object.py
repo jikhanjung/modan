@@ -129,6 +129,7 @@ class UnitCalibrationDlg(wx.Dialog):
         self.length = wx.TextCtrl(panel, -1, '1')
         self.unittext = wx.StaticText(panel, -1, 'mm', style=wx.ALIGN_LEFT)
 
+        self.okButton = wx.Button(panel, CONTROL_ID['ID_CALIBRATION_OKAY_BUTTON'], 'OK')
         self.cancelButton = wx.Button(panel, CONTROL_ID['ID_CALIBRATION_CANCEL_BUTTON'], 'Cancel')
         self.Bind(wx.EVT_BUTTON, self.OnOk, id=CONTROL_ID['ID_CALIBRATION_OKAY_BUTTON'])
         self.Bind(wx.EVT_BUTTON, self.OnCancel, id=CONTROL_ID['ID_CALIBRATION_CANCEL_BUTTON'])
@@ -265,7 +266,7 @@ class ModanImageControl(wx.Window):
     def LoadImageFile(self, filename):
         img = wx.Image(filename)
         self.SetImage(img)
-        #print filename
+        print filename
         #self.currimg = self.img = self.origimg = wx.Image( filename )
         #print self.img.ClassName
         #self.RefreshImage()
@@ -629,8 +630,8 @@ class ModanImageControl(wx.Window):
             #print vertex
             vfrom = int(edge[0]) - 1
             vto = int(edge[1]) - 1
-            ( x1, y1 ) = self.ImageXYtoScreenXY(landmark_list[vfrom][0], landmark_list[vfrom][1])
-            ( x2, y2 ) = self.ImageXYtoScreenXY(landmark_list[vto][0], landmark_list[vto][1])
+            ( x1, y1 ) = self.ImageXYtoScreenXY(landmark_list[vfrom].coords[0], landmark_list[vfrom].coords[1])
+            ( x2, y2 ) = self.ImageXYtoScreenXY(landmark_list[vto].coords[0], landmark_list[vto].coords[1])
             max_x = max(x1, x2)
             min_x = min(x1, x2)
             max_y = max(y1, y2)
@@ -761,8 +762,8 @@ class ModanImageControl(wx.Window):
                     continue
                 else:
                     #print "draw wire"
-                    lm_from = landmark_list[vfrom]
-                    lm_to = landmark_list[vto]
+                    lm_from = landmark_list[vfrom].coords
+                    lm_to = landmark_list[vto].coords
                     dc_x1, dc_y1 = self.ImageXYtoScreenXY(lm_from[0], lm_from[1])
                     dc_x2, dc_y2 = self.ImageXYtoScreenXY(lm_to[0], lm_to[1])
                     dc.DrawLine(dc_x1, dc_y1, dc_x2, dc_y2)
@@ -1383,32 +1384,6 @@ class ModanObjectDialog(wx.Dialog):
             buttons2[i].SetSize(( buttonWidth, rowHeight ))
             x += buttonWidth
 
-    def OnImageLoad(self, event):
-        wildcard = "JPEG file (*.jpg)|*.jpg|" \
-                   "BMP file (*.bmp)|*.bmp|" \
-                   "TIF file (*.tif)|*.tif|" \
-                   "All files (*.*)|*.*"
-
-        dialog_style = wx.OPEN
-
-        selectfile_dialog = wx.FileDialog(self, "Select File to Load...", "", "", wildcard, dialog_style)
-        if selectfile_dialog.ShowModal() == wx.ID_OK:
-            self.ConfirmClearLandmark()
-            self.importpath = selectfile_dialog.GetPath()
-            #( unc, pathname ) = splitunc( self.importpath )
-            pathname = self.importpath
-            #print pathname
-            ( pathname, fname ) = os.path.split(pathname)
-
-            #print pathname
-            #print fname
-
-            ( fname, ext ) = os.path.splitext(fname)
-            if ( self.forms['objname'].GetValue() == '' ):
-                self.forms['objname'].SetValue(fname)
-            self.objectViewer.LoadImageFile(self.importpath)
-        selectfile_dialog.Destroy()
-
     def OnWireframeMode(self, event):
         if self.dimension == 3:
             return
@@ -1465,6 +1440,38 @@ class ModanObjectDialog(wx.Dialog):
         self.objectViewer.PasteImage(wx.ImageFromBitmap(img.GetBitmap()))
         #self.TwoDVie
         return
+
+    def OnImageLoad(self, event):
+        wildcard = "JPEG file (*.jpg)|*.jpg|" \
+                   "BMP file (*.bmp)|*.bmp|" \
+                   "TIF file (*.tif)|*.tif|" \
+                   "All files (*.*)|*.*"
+
+        dialog_style = wx.OPEN
+
+        selectfile_dialog = wx.FileDialog(self, "Select File to Load...", "", "", wildcard, dialog_style)
+        if selectfile_dialog.ShowModal() == wx.ID_OK:
+            self.ConfirmClearLandmark()
+            self.importpath = selectfile_dialog.GetPath()
+            #( unc, pathname ) = splitunc( self.importpath )
+            pathname = self.importpath
+            #print pathname
+            ( pathname, fname ) = os.path.split(pathname)
+
+            #print pathname
+            #print fname
+            self.filename = fname
+            ( fname, ext ) = os.path.splitext(fname)
+            self.fileext = ext
+            if ( self.forms['objname'].GetValue() == '' ):
+                self.forms['objname'].SetValue(fname)
+            self.TwoDViewer.LoadImageFile(self.importpath)
+        selectfile_dialog.Destroy()
+
+    def set_object_image(self,wximg):
+        if len(self.mdobject.image_list) > 0:
+            self.mdobject.image_list[0].set_image_object(wximg)
+
 
     def OnMissingData(self, event):
         missing_lm = [LM_MISSING_VALUE, LM_MISSING_VALUE, LM_MISSING_VALUE]
@@ -1551,11 +1558,13 @@ class ModanObjectDialog(wx.Dialog):
         self.has_dataset = True
         self.forms['dsname'].SetLabel(dataset.dsname)
         self.set_dimension(dataset.dimension)
+        self.dataset.unpack_wireframe()
+        self.edge_list = self.dataset.edge_list
         self.AlignControls()
 
     def set_mdobject(self, mdobject):
         session = self.app.get_session()
-        print "session in setmodanobject:", session
+        #print "session in setmodanobject:", session
         if mdobject not in session:
             session.add( mdobject )
         self.mdobject = mdobject
@@ -1568,10 +1577,11 @@ class ModanObjectDialog(wx.Dialog):
         #print str(mdobject.dataset_id)+":"+ds.dsname
         #print mdobject
         #self.forms['landmark_list'].Append( ( lm.lmseq, lm.xcoord, lm.ycoord, lm.zcoord ) )
-        if self.mdobject.has_image:
-            self.TwoDViewer.SetImage(mdobject.image.get_image_object())
-            if mdobject.image.ppmm > 0:
-                self.TwoDViewer.pixels_per_millimeter = self.ppmm = mdobject.image.ppmm
+        if len(self.mdobject.image_list) > 0:
+            img = mdobject.image_list[0]
+            self.TwoDViewer.SetImage(img.get_image_object())
+            if img.ppmm > 0:
+                self.TwoDViewer.pixels_per_millimeter = self.ppmm = img.ppmm
                 self.coords_in_millimeter = True
                 self.chkCoordsInMillimeter.SetValue(self.coords_in_millimeter)
 
@@ -1692,10 +1702,9 @@ class ModanObjectDialog(wx.Dialog):
             #print "coords in millimeter, in appendlandmark"
             x /= self.ppmm
             y /= self.ppmm
-            z /= self.ppmm
         #print self.ppmm
         nums = []
-        for num in landmark.coords:
+        for num in [x,y]:
             #print num
             #print "[" +str(num)+"]"
             if num == '':
@@ -1756,10 +1765,10 @@ class ModanObjectDialog(wx.Dialog):
         mo.pack_landmark()
 
         if self.TwoDViewer.has_image:
-            img = MdImage()
-            img.set_image_object(self.TwoDViewer.origimg)
-            img.ppmm = self.ppmm
-            mo.image =[img]
+            if len(mo.image_list)==0:
+                mo.image_list.append(MdImage())
+            mo.image_list[0].set_image_object(self.TwoDViewer.origimg)
+            mo.image_list[0].ppmm = self.ppmm
         #for i in range(len(self.dataset.groupname_list)):
         #    mo.group_list[i] = self.groupText[i].GetValue()
         print "session in dialog_object", session
@@ -1773,7 +1782,6 @@ class ModanObjectDialog(wx.Dialog):
             #print self.baseline_points
             self.dataset.pack_wireframe()
             self.dataset.pack_baseline()
-            self.dataset.update()
             ret = wx.ID_EDIT
 
         #    self.GetParent().objectContent.SetObjectContent(mo)

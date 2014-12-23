@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Table, Column, Integer, String, Float, DateTime, ForeignKey
+from sqlalchemy import Table, Column, Integer, String, Float, DateTime, ForeignKey, LargeBinary
 import datetime
 import math, numpy, wx, zlib
 from sqlalchemy.orm import relationship
@@ -32,7 +32,7 @@ class MdObject(Base):
     dataset_id = Column(Integer, ForeignKey("mddataset.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     modified_at = Column(DateTime)
-    image = relationship("MdImage", order_by="MdImage.id", backref="mdobject")
+    image_list = relationship("MdImage", order_by="MdImage.id", backref="mdobject")
     centroid_size = -1
     property_list = relationship("MdProperty", order_by="MdProperty.id", backref="mdobject")
 
@@ -106,6 +106,9 @@ class MdObject(Base):
         #              - sum_of_z * sum_of_z / lm_count
         #print centroid_size
         centroid_size = math.sqrt(centroid_size)
+        if len(self.image_list) > 0 and self.image_list[0].ppmm > 0:
+            centroid_size = centroid_size / self.image_list[0].ppmm
+
         self.centroid_size = centroid_size
         #centroid_size = float( int(  * 100 ) ) / 100
         return centroid_size
@@ -431,11 +434,14 @@ class MdProperty(Base):
 class MdImage(Base):
     __tablename__ = 'mdimage'
     id = Column(Integer, primary_key=True)
-    imagepath = Column(String)
+    width = Column(Integer)
+    height = Column(Integer)
+    imagebinary = Column(LargeBinary)
     ppmm = Column(Integer)
     object_id = Column(Integer, ForeignKey("mdobject.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     modified_at = Column(DateTime)
+    image_object = None
 
     def set_image_object(self, image_object):
         self.image_object = image_object
@@ -443,16 +449,14 @@ class MdImage(Base):
             self.width = self.image_object.GetWidth()
             self.height = self.image_object.GetHeight()
             data = self.image_object.GetData()
-            self.imagedata = zlib.compress(data)
+            self.imagebinary = zlib.compress(data)
 
     def get_image_object(self):
-        if self.imagedata == '':
-            return
-        if self.image_object == None:
+        if self.image_object is None:
             self.image_object = wx.EmptyImage(self.width, self.height)
-            self.image_object.SetData(zlib.decompress(self.imagedata))
+            self.image_object.SetData(zlib.decompress(self.imagebinary))
         elif self.image_object.ClassName == 'wxImage':
-            self.image_object.SetData(zlib.decompress(self.imagedata))
+            self.image_object.SetData(zlib.decompress(self.imagebinary))
         return self.image_object
 
 
@@ -472,6 +476,7 @@ class MdObjectView:
         self.landmark_list = []
         for lm in mdobject.landmark_list:
             self.landmark_list.append( MdLandmarkView(lm))
+        self.image_list = mdobject.image_list
         self.dataset_id = mdobject.dataset_id
         self.property_list = mdobject.property_list
         self.centroid_size = -1
