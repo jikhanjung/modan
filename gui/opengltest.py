@@ -692,17 +692,20 @@ class MdCanvas(MdCanvasBase):
                 glColor3f(0.0, 0.0, 1.0)
             else:
                 glColor3f(original_color[0], color[1], color[2])
+            coords = [0,0,0]
+            for j in range(len(lm.coords)):
+                coords[j] = lm.coords[j]
 
             if single_object_mode:
                 glPushMatrix()
-                glTranslate(lm.coords[0], lm.coords[1], lm.coords[2])
+                glTranslate(coords[0], coords[1], coords[2])
                 if self.render_mode == OpenGL.GL.GL_SELECT:
                     glLoadName(i)
                 i += 1
                 glutSolidSphere(size, 20, 20)  #glutSolidCube( size )
                 glPopMatrix()
             else:
-                glVertex3f(lm.coords[0], lm.coords[1], lm.coords[2])
+                glVertex3f(coords[0], coords[1], coords[2])
 
         if not single_object_mode:
             #print "glend"

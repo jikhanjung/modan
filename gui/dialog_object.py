@@ -266,7 +266,7 @@ class ModanImageControl(wx.Window):
     def LoadImageFile(self, filename):
         img = wx.Image(filename)
         self.SetImage(img)
-        print filename
+        #print filename
         #self.currimg = self.img = self.origimg = wx.Image( filename )
         #print self.img.ClassName
         #self.RefreshImage()
@@ -1475,7 +1475,7 @@ class ModanObjectDialog(wx.Dialog):
 
     def OnMissingData(self, event):
         missing_lm = [LM_MISSING_VALUE, LM_MISSING_VALUE, LM_MISSING_VALUE]
-        self.AppendLandmark(missing_lm[:self.dimension])
+        self.AppendLandmark(MdLandmark(missing_lm[:self.dimension]))
         return
 
     def ApplyCalibrationResult(self):
@@ -1741,7 +1741,7 @@ class ModanObjectDialog(wx.Dialog):
                 session.delete(self.mdobject)
                 session.commit()
                 #self.GetParent().Refresh()
-                print "object delete done"
+                #print "object delete done"
                 self.EndModal(wx.ID_EDIT)
 
     def OnSave(self, event):
@@ -1771,7 +1771,7 @@ class ModanObjectDialog(wx.Dialog):
             mo.image_list[0].ppmm = self.ppmm
         #for i in range(len(self.dataset.groupname_list)):
         #    mo.group_list[i] = self.groupText[i].GetValue()
-        print "session in dialog_object", session
+        #print "session in dialog_object", session
         if mo not in session:
             session.add(mo)
 
@@ -1827,7 +1827,7 @@ class ModanObjectDialog(wx.Dialog):
         lm = [self.forms['xcoord'].GetValue(),self.forms['ycoord'].GetValue()]
         if self.dimension == 3:
             lm.append(self.forms['zcoord'].GetValue())
-        print lm
+        #print lm
         self.AppendLandmark(MdLandmark(lm))
         #self.forms['landmark_list'].Append( [idx, x, y, z] )
         self.forms['xcoord'].SetValue('')
@@ -1869,8 +1869,8 @@ class ModanObjectDialog(wx.Dialog):
     def RefreshThreeDViewer(self):
         dummy_mdobject = MdObject()
         dummy_mdobject.landmark_list = self.landmark_list[:]
-        print "refresh threed viewer", len( self.landmark_list), "landmarks"
-        print "refresh threed viewer", len( dummy_mdobject.landmark_list), "object landmarks"
+        #print "refresh threed viewer", len( self.landmark_list), "landmarks"
+        #print "refresh threed viewer", len( dummy_mdobject.landmark_list), "object landmarks"
         self.ThreeDViewer.SetSingleObject(dummy_mdobject)
         self.ThreeDViewer.OnDraw()
         self.ThreeDViewer.Refresh()

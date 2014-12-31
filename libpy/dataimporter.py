@@ -341,19 +341,21 @@ class ModanDataImporter:
             print 'number of objects does not match!! %d objects expected, but %d objects found' % (
                 self.object_count, len(dataset.object_list) )
 
-        i = 0
-        for obj in dataset.object_list:
-            for j in range(len(property_list_list[i])):
-                mdprop = MdProperty(property_list_list[i][j])
-                mdprop.object_id = obj.id
-                mdprop.propertyname_id = dataset.propertyname_list[j].id
-                obj.property_list.append(mdprop)
-            obj.dataset_id = dataset.id
-            #print object.id
-            i += 1
-            #percentage = ( float( processed_object ) / float ( self.objectcount) ) * 100
-            percentage = ( float(i) / float(self.object_count) ) * 100
-            self.parent.SetProgress(int(percentage))
+        if len( property_list_list ) >0:
+            i = 0
+            for obj in dataset.object_list:
+
+                for j in range(len(property_list_list[i])):
+                    mdprop = MdProperty(property_list_list[i][j])
+                    mdprop.object_id = obj.id
+                    mdprop.propertyname_id = dataset.propertyname_list[j].id
+                    obj.property_list.append(mdprop)
+                obj.dataset_id = dataset.id
+                #print object.id
+                i += 1
+                #percentage = ( float( processed_object ) / float ( self.objectcount) ) * 100
+                percentage = ( float(i) / float(self.object_count) ) * 100
+                self.parent.SetProgress(int(percentage))
         #print group_info
         edge_list.sort()
         dataset.edge_list = edge_list

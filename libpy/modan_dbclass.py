@@ -17,7 +17,7 @@ class MdLandmark(object):
     coords = []
 
     def __init__(self, coords):
-        print coords
+        #print coords
         self.coords = [float(x) for x in coords]
         self.dim = len(self.coords)
 
@@ -304,8 +304,8 @@ class MdDataset(Base):
     edge_list = []
     baseline_point_list = []
 
-    def pack_wireframe(self, edge_list=[]):
-        if edge_list == []:
+    def pack_wireframe(self, edge_list=None):
+        if edge_list is None:
             edge_list = self.edge_list
 
         for points in edge_list:
@@ -351,9 +351,9 @@ class MdDataset(Base):
 
         return self.edge_list
 
-    def pack_polygons(self, polygon_list=[]):
+    def pack_polygons(self, polygon_list=None):
         # print polygon_list
-        if polygon_list == []:
+        if polygon_list is None:
             polygon_list = self.polygon_list
         for polygon in polygon_list:
             # print polygon
@@ -384,8 +384,8 @@ class MdDataset(Base):
     def get_edge_list(self):
         return self.edge_list
 
-    def pack_baseline(self, baseline_point_list=[]):
-        if len(baseline_point_list) == 0 and len(self.baseline_point_list) > 0:
+    def pack_baseline(self, baseline_point_list=None):
+        if baseline_point_list is None and len(self.baseline_point_list) > 0:
             baseline_point_list = self.baseline_point_list
         # print baseline_points
         self.baseline = ",".join([str(x) for x in baseline_point_list])
@@ -597,26 +597,25 @@ class MdObjectView:
         # print "rotation matrix", r_mx
 
         for lm in self.landmark_list:
-            x_rotated = lm.coords[0] * r_mx[0][0] + lm.coords[1] * r_mx[1][0] + lm.coords[2] * r_mx[2][0]
-            y_rotated = lm.coords[0] * r_mx[0][1] + lm.coords[1] * r_mx[1][1] + lm.coords[2] * r_mx[2][1]
-            z_rotated = lm.coords[0] * r_mx[0][2] + lm.coords[1] * r_mx[1][2] + lm.coords[2] * r_mx[2][2]
-            lm.coords[0] = x_rotated
-            lm.coords[1] = y_rotated
-            lm.coords[2] = z_rotated
+            coords = [0,0,0]
+            for j in range(len(lm.coords)):
+                coords[j] = lm.coords[j]
+            x_rotated = coords[0] * r_mx[0][0] + coords[1] * r_mx[1][0] + coords[2] * r_mx[2][0]
+            y_rotated = coords[0] * r_mx[0][1] + coords[1] * r_mx[1][1] + coords[2] * r_mx[2][1]
+            z_rotated = coords[0] * r_mx[0][2] + coords[1] * r_mx[1][2] + coords[2] * r_mx[2][2]
+            lm.coords = [ x_rotated, y_rotated, z_rotated ]
 
     def trim_decimal(self, dec=4):
         factor = math.pow(10, dec)
 
         for lm in self.landmark_list:
-            lm.coords[0] = float(round(lm.coords[0] * factor)) / factor
-            lm.coords[1] = float(round(lm.coords[1] * factor)) / factor
-            lm.coords[2] = float(round(lm.coords[2] * factor)) / factor
+            lm.coords = [float(round(x * factor)) / factor for x in lm.coords]
 
     def print_landmarks(self, text=''):
         print "[", text, "] [", str(self.get_centroid_size()), "]"
         # lm= self.landmarks[0]
         for lm in self.landmark_list:
-            print lm.coords[0], lm.coords[1], lm.coords[2]
+            print lm.coords
             #break
             #lm= self.landmarks[1]
             #print lm.xcoord, ", ", lm.ycoord, ", ", lm.zcoord
@@ -741,12 +740,14 @@ class MdDatasetView:
 
         i = 0
         for lm in ( mo.landmark_list ):
-            target_shape[i] = lm.coords
+            for j in range(len(lm.coords)):
+                target_shape[i,j] = lm.coords[j]
             i += 1
 
         i = 0
         for lm in self.reference_shape.landmark_list:
-            reference_shape[i] = lm.coords
+            for j in range(len(lm.coords)):
+                reference_shape[i,j] = lm.coords[j]
             i += 1
 
         rotation_matrix = self.rotation_matrix(reference_shape, target_shape)
@@ -761,7 +762,8 @@ class MdDatasetView:
 
         i = 0
         for lm in ( mo.landmark_list ):
-            lm.coords = [ rotated_shape[i, 0], rotated_shape[i, 1], rotated_shape[i, 2] ]
+            lm.coords = rotated_shape[i]
+            #lm.coords = [ rotated_shape[i, 0], rotated_shape[i, 1], rotated_shape[i, 2] ]
             i += 1
 
     def rotation_matrix(self, ref, target):
@@ -795,7 +797,8 @@ class MdDatasetView:
                     sum_z.append(0)
                 sum_x[i] += lm.coords[0]
                 sum_y[i] += lm.coords[1]
-                sum_z[i] += lm.coords[2]
+                if len( lm.coords ) == 3:
+                    sum_z[i] += lm.coords[2]
                 i += 1
         for i in range(len(sum_x)):
             lm = MdLandmark( [ float(sum_x[i]) / object_count, float(sum_y[i]) / object_count, float(sum_z[i]) / object_count ])
@@ -867,7 +870,8 @@ class MdDatasetView:
 
     def resistant_fit_superimposition(self):
         if len(self.object_list) == 0:
-            raise "No objects to transform!"
+            print "No objects to transform!"
+            raise 
 
         for mo in self.object_list:
             mo.move_to_center()
