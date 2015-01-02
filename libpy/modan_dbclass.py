@@ -32,9 +32,9 @@ class MdObject(Base):
     dataset_id = Column(Integer, ForeignKey("mddataset.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     modified_at = Column(DateTime)
-    image_list = relationship("MdImage", order_by="MdImage.id", backref="mdobject")
+    image_list = relationship("MdImage", order_by="MdImage.id", backref="mdobject", cascade="all, delete-orphan", passive_deletes=True)
     centroid_size = -1
-    property_list = relationship("MdProperty", order_by="MdProperty.id", backref="mdobject")
+    property_list = relationship("MdProperty", order_by="MdProperty.id", backref="mdobject", cascade="all, delete-orphan", passive_deletes=True)
 
     landmark_list = []
     has_image = False
@@ -419,7 +419,7 @@ class MdPropertyName(Base):
 class MdProperty(Base):
     __tablename__ = 'mdproperty'
     id = Column(Integer, primary_key=True)
-    object_id = Column(Integer, ForeignKey("mdobject.id"), nullable=False)
+    object_id = Column(Integer, ForeignKey("mdobject.id", ondelete="CASCADE"), nullable=False, )
     propertyname_id = Column(Integer, ForeignKey("mdpropertyname.id"), nullable=False)
     property = Column(String, default='')
 
@@ -438,7 +438,7 @@ class MdImage(Base):
     height = Column(Integer)
     imagebinary = Column(LargeBinary)
     ppmm = Column(Integer)
-    object_id = Column(Integer, ForeignKey("mdobject.id"), nullable=False)
+    object_id = Column(Integer, ForeignKey("mdobject.id", ondelete="CASCADE"), nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     modified_at = Column(DateTime)
     image_object = None

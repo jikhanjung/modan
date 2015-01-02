@@ -351,20 +351,22 @@ class MdObjectList(NiftyVirtualList):
                                    "Do you really want to delete " + str(len(self.selected_object_list)) + " objects?",
                                    "Warning", wx.YES_NO | wx.NO_DEFAULT | wx.CENTRE | wx.ICON_EXCLAMATION)
         result = msg_box.ShowModal()
-        session = self.app.get_session()
         if ( result == wx.ID_YES ):
 
             wx.BeginBusyCursor()
+            session = self.app.get_session()
             for mdobject in self.selected_object_list:
                 session.add(mdobject)
-                for p in mdobject.property_list:
-                    session.delete( p )
+                #for p in mdobject.property_list:
+                #    session.delete( p )
+                #for image in mdobject.image_list:
+                #    session.delete(image)
                 session.delete(mdobject)
                 #print object
                 #print object.id
                 #self.remove_by_mdobject_id(object.id)
             session.commit()
-            self.RefreshList()
+            self.frame.refresh_list()
             wx.EndBusyCursor()
         return
 
