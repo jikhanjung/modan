@@ -275,15 +275,15 @@ class MdCanvasBase(glcanvas.GLCanvas):
             #    print "a"
         return hit, top_lmidx
 
-    def OnMiddleDown(self, event):
+    def OnMouseEnter(self, event):
+        self.SetFocus()
+
+    def OnLeftDown(self, event):
         self.is_dragging = True
         self.CaptureMouse()
         self.x, self.y = self.lastx, self.lasty = event.GetPosition()
 
-    def OnMouseEnter(self, event):
-        self.SetFocus()
-
-    def OnMiddleUp(self, event):
+    def OnLeftUp(self, event):
         #print "up"
         if self.is_dragging:
             self.is_dragging = False
@@ -355,7 +355,7 @@ class MdCanvasBase(glcanvas.GLCanvas):
         self.Refresh(False)
         return
 
-    def OnLeftDown(self, event):
+    def OnMiddleDown(self, event):
         #if self.print_log:
         #print "OnLeftDown", self.mode
         #print self.mode
@@ -381,7 +381,7 @@ class MdCanvasBase(glcanvas.GLCanvas):
             self.x, self.y = self.lastx, self.lasty = event.GetPosition()
             #self.SetFocus()
 
-    def OnLeftUp(self, event):
+    def OnMiddleUp(self, event):
 
         if self.is_dragging_wire:
             x, y = event.GetPosition()
@@ -448,8 +448,8 @@ class MdCanvasBase(glcanvas.GLCanvas):
         #self.OnDraw()
 
     def OnMotion(self, event):
-        if self.auto_rotate:
-            return
+        #if self.auto_rotate:
+            #return
         x, y = event.GetPosition()
         if self.is_dragging:  #event.Dragging() and event.LeftIsDown():
             self.x, self.y = x, y
