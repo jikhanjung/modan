@@ -119,13 +119,14 @@ class MdDatasetTree(wx.TreeCtrl):
             self.refresh_object_list()
             #wx.EndBusyCursor()
         else:    #return
-            print "id map:", session.identity_map
-            if ds in session:
-                print "ds is in session", ds, session
-            else:
-                print "ds not in session", ds, session
+            #print "id map:", session.identity_map
+            #if ds in session:
+            #    print "ds is in session", ds, session
+            #else:
+            #    print "ds not in session", ds, session
+            if ds not in session:
                 session.add(ds)
-            print "id map:", session.identity_map
+            #print "id map:", session.identity_map
             self.dataset = ds
             self.dataset_selected = True
             self.frame.object_list_pane.SetDataset(ds)

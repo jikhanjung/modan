@@ -109,7 +109,7 @@ class ModanGUI(wx.App):
         if self.session is None:
             self.session =self.dbi.Session()
 
-        print "Session in get_session:", self.session
+        #print "Session in get_session:", self.session
         return self.session
 
 app = ModanGUI(0)

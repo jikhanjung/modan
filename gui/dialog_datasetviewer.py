@@ -213,6 +213,7 @@ class ModanDatasetViewer(wx.Dialog):
         self.xaxis_pc_idx = 1
         self.yaxis_pc_idx = 2
         #self.superimposition = ID_RD_PROCRUSTES
+        self.selected_object_list = []
 
         self.ThreeDViewer = MdCanvas(panel)
         self.ThreeDViewer.SetMinSize((400, 400))
@@ -329,8 +330,8 @@ class ModanDatasetViewer(wx.Dialog):
             self.groupLabelSizer.Add(self.groupLabel[i], wx.EXPAND)
 
         il = wx.ImageList(16, 16, True)
-        il_max = il.Add(wx.Bitmap("icon/visible.png", wx.BITMAP_TYPE_PNG))
-        il_max = il.Add(wx.Bitmap("icon/invisible.png", wx.BITMAP_TYPE_PNG))
+        il_max = il.Add(wx.Bitmap("icon/visible_16.png", wx.BITMAP_TYPE_PNG))
+        il_max = il.Add(wx.Bitmap("icon/invisible_16.png", wx.BITMAP_TYPE_PNG))
         self.object_listctrl = wx.ListCtrl(panel, CONTROL_ID['ID_OBJECT_LISTCTRL'], style=wx.LC_REPORT)
         self.object_listctrl.InsertColumn(0, '', width=20)
         self.object_listctrl.InsertColumn(1, 'Name', width=80)
@@ -342,7 +343,10 @@ class ModanDatasetViewer(wx.Dialog):
         self.object_listctrl.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnObjectSelected, id=CONTROL_ID['ID_OBJECT_LISTCTRL'])
         self.object_listctrl.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnObjectSelected, id=CONTROL_ID['ID_OBJECT_LISTCTRL'])
         self.object_listctrl.Bind(wx.EVT_LEFT_DCLICK, self.OnObjectDoubleClick, id=CONTROL_ID['ID_OBJECT_LISTCTRL'])
-        #self.object_listctrl.Bind(wx.EVT_LEFT_UP, self.OnLeftUp, id=ID_OBJECT_LISTCTRL)
+        #self.object_listctrl.Bind(wx.EVT_LEFT_DOWN, self.OnObjectClick, id=CONTROL_ID['ID_OBJECT_LISTCTRL'])
+        #self.object_listctrl.Bind(wx.EVT_RIGHT_DOWN, self.OnRightDown, id=CONTROL_ID['ID_OBJECT_LISTCTRL'])
+        #self.object_listctrl.Bind(wx.EVT_RIGHT_UP, self.OnRightUp, id=CONTROL_ID['ID_OBJECT_LISTCTRL'])
+        self.object_listctrl.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnRightClick, id=CONTROL_ID['ID_OBJECT_LISTCTRL'])
 
 
         self.canvasOptionSizer = wx.GridBagSizer(hgap=5, vgap=5)
@@ -422,7 +426,7 @@ class ModanDatasetViewer(wx.Dialog):
             return
 
         wx.BeginBusyCursor()
-        baseline = self.ThreeDViewer.dataset.get_baseline_points()
+        baseline = self.ThreeDViewer.dataset.baseline_point_list
 
         self.superimposition_method = method
         if method == CONST['IDX_BOOKSTEIN']:
@@ -1043,6 +1047,17 @@ class ModanDatasetViewer(wx.Dialog):
 
         return rv
 
+    def OnObjectClick(self, event):
+        selected_idx = self.object_listctrl.GetFocusedItem()
+        if self.ThreeDViewer.dataset.object_list[selected_idx].visible:
+            #print "visible -> invisible"
+            self.object_listctrl.SetItemImage(selected_idx, 1, 1)
+        else:
+            #print "invisible -> visible"
+            self.object_listctrl.SetItemImage(selected_idx, 0, 0)
+        self.ThreeDViewer.ToggleObjectVisibility(selected_idx)
+        self.ThreeDViewer.Refresh(False)
+
     def OnObjectDoubleClick(self, event):
         selected_idx = self.object_listctrl.GetFocusedItem()
         if self.ThreeDViewer.dataset.object_list[selected_idx].visible:
@@ -1053,6 +1068,91 @@ class ModanDatasetViewer(wx.Dialog):
             self.object_listctrl.SetItemImage(selected_idx, 0, 0)
         self.ThreeDViewer.ToggleObjectVisibility(selected_idx)
         self.ThreeDViewer.Refresh(False)
+
+    def OnRightDown(self,event):
+        event_point = event.GetPoint()
+        print event_point
+
+        m = wx.Menu()
+        i = m.Append(wx.NewId(), '&Hide this')
+        self.Bind(wx.EVT_MENU, self.OnHideThis, i)
+        i = m.Append(wx.NewId(), 'Hide &Others')
+        self.Bind(wx.EVT_MENU, self.OnHideOthers, i)
+        self.PopupMenu(m, event_point)
+
+    def OnRightUp(self,event):
+        event_point = event.GetPoint()
+        print event_point
+
+    def OnRightClick(self,event):
+
+        itemid = self.object_listctrl.GetFirstSelected()
+        print "first selected item: ", itemid
+        if ( itemid < 0 ):
+            return
+        object_idx_list = []
+        while ( itemid >= 0 ):
+            object_idx_list.append(itemid)
+            itemid = self.object_listctrl.GetNextSelected(itemid)
+        self.selected_object_list = object_idx_list
+
+
+        selected_idx = self.object_listctrl.GetFocusedItem()
+        self.selected_object_list = [selected_idx]
+
+        m = wx.Menu()
+        if self.ThreeDViewer.dataset.object_list[selected_idx].visible:
+            i = m.Append(wx.NewId(), '&Hide this')
+            self.Bind(wx.EVT_MENU, self.OnHideThis, i)
+        else:
+            i = m.Append(wx.NewId(), '&Show this')
+            self.Bind(wx.EVT_MENU, self.OnShowThis, i)
+        i = m.Append(wx.NewId(), 'Hide &Others')
+        self.Bind(wx.EVT_MENU, self.OnHideOthers, i)
+        i = m.Append(wx.NewId(), 'S&how others')
+        self.Bind(wx.EVT_MENU, self.OnShowOthers, i)
+
+        event_point = event.GetPoint()
+        pos = self.object_listctrl.GetPosition()
+        (x1, y1 )= pos
+        (x2, y2 ) = event_point
+        menu_point = ( x1+x2, y1+y2 )
+        print pos
+        print "right click", menu_point
+
+        self.PopupMenu(m, menu_point)
+
+    def OnShowThis(self,event):
+        for i in range(len(self.ThreeDViewer.dataset.object_list)):
+            if i in self.selected_object_list and not self.ThreeDViewer.dataset.object_list[i].visible:
+                self.object_listctrl.SetItemImage(i, 0, 0)
+                self.ThreeDViewer.ToggleObjectVisibility(i)
+        self.ThreeDViewer.Refresh(False)
+
+    def OnHideThis(self,event):
+        for i in range(len(self.ThreeDViewer.dataset.object_list)):
+            if i in self.selected_object_list and self.ThreeDViewer.dataset.object_list[i].visible:
+                self.object_listctrl.SetItemImage(i, 1, 1)
+                self.ThreeDViewer.ToggleObjectVisibility(i)
+        self.ThreeDViewer.Refresh(False)
+
+    def OnHideOthers(self,event):
+        for i in range(len(self.ThreeDViewer.dataset.object_list)):
+            if i not in self.selected_object_list and self.ThreeDViewer.dataset.object_list[i].visible:
+                self.object_listctrl.SetItemImage(i, 1, 1)
+                self.ThreeDViewer.ToggleObjectVisibility(i)
+        self.ThreeDViewer.Refresh(False)
+        print self.selected_object_list
+        print "hide others"
+
+    def OnShowOthers(self,event):
+        for i in range(len(self.ThreeDViewer.dataset.object_list)):
+            if i not in self.selected_object_list and not self.ThreeDViewer.dataset.object_list[i].visible:
+                self.object_listctrl.SetItemImage(i, 0, 0)
+                self.ThreeDViewer.ToggleObjectVisibility(i)
+        self.ThreeDViewer.Refresh(False)
+        print self.selected_object_list
+        print "hide others"
 
     def OnXAxis(self, event):
         x = self.xAxisCombo.GetValue()
