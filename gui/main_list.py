@@ -333,11 +333,8 @@ class MdObjectList(NiftyVirtualList):
 
         if len(export_list) <= 0:
             return
-        ds = MdDataset()
-        ds.id = export_list[0].dataset_id
-        ds.find()
 
-        export_dialog.SetDataset(ds)
+        export_dialog.SetDataset(self.dataset)
         export_dialog.SetObjectList(object_list)
         export_dialog.SetExportList(export_list)
         #print ds[0].objects

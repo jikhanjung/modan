@@ -369,17 +369,6 @@ class MdCanvasBase(glcanvas.GLCanvas):
                 self.is_dragging_baseline = True
                 self.begin_baseline_idx = idx
                 self.CaptureMouse()
-        return
-
-        if not self.auto_rotate:
-            point = event.GetPosition()
-            self.CheckSelect(point[0], point[1])
-
-        else:
-            self.is_dragging = True
-            self.CaptureMouse()
-            self.x, self.y = self.lastx, self.lasty = event.GetPosition()
-            #self.SetFocus()
 
     def OnMiddleUp(self, event):
 
@@ -402,7 +391,7 @@ class MdCanvasBase(glcanvas.GLCanvas):
             if hit and lm_idx < 1000:
                 if lm_idx == self.begin_baseline_idx:
                     #parent = self.GetParent().GetParent()
-                    if len(parent.baseline_points) == 3:
+                    if len(parent.baseline_point_list) == 3:
                         #print "clear baseline"
                         parent.ClearBaseline()
                     parent.AppendBaselinePoint(lm_idx)
@@ -688,7 +677,7 @@ class MdCanvas(MdCanvasBase):
             elif i == self.begin_baseline_idx or i == self.end_baseline_idx:
                 glColor3f(self.color.meanshape_wireframe[0], self.color.meanshape_wireframe[1],
                           self.color.meanshape_wireframe[2])
-            elif i in self.GetParent().GetParent().baseline_points and self.show_baseline:
+            elif i in self.GetParent().GetParent().baseline_point_list and self.show_baseline:
                 glColor3f(0.0, 0.0, 1.0)
             else:
                 glColor3f(original_color[0], color[1], color[2])
@@ -717,9 +706,9 @@ class MdCanvas(MdCanvasBase):
             glColor3f(.2, .2, 1.0)
             basestr = ["(0,0,0)", "(0,1,0)", "(x,y,0)"]
             i = 0
-            for i in range(len(self.GetParent().GetParent().baseline_points)):
+            for i in range(len(self.GetParent().GetParent().baseline_point_list)):
                 #print "i=",i
-                idx = self.GetParent().GetParent().baseline_points[i]
+                idx = self.GetParent().GetParent().baseline_point_list[i]
                 #print "idx=",idx
                 lm = object.landmark_list[idx - 1]
                 #print basestr[i]
@@ -910,7 +899,7 @@ class MdCanvas(MdCanvasBase):
                       self.color.meanshape_wireframe[2])
             parent = self.GetParent().GetParent()
             line = []
-            line[:] = parent.baseline_points[:]
+            line[:] = parent.baseline_point_list[:]
             if len(line) > 0:
                 line.append(line[0])
                 for i in range(len(line) - 1):
