@@ -1071,7 +1071,7 @@ class ModanDatasetViewer(wx.Dialog):
 
     def OnRightDown(self,event):
         event_point = event.GetPoint()
-        print event_point
+        #print event_point
 
         m = wx.Menu()
         i = m.Append(wx.NewId(), '&Hide this')
@@ -1082,12 +1082,12 @@ class ModanDatasetViewer(wx.Dialog):
 
     def OnRightUp(self,event):
         event_point = event.GetPoint()
-        print event_point
+        #print event_point
 
     def OnRightClick(self,event):
 
         itemid = self.object_listctrl.GetFirstSelected()
-        print "first selected item: ", itemid
+        #print "first selected item: ", itemid
         if ( itemid < 0 ):
             return
         object_idx_list = []
@@ -1117,8 +1117,8 @@ class ModanDatasetViewer(wx.Dialog):
         (x1, y1 )= pos
         (x2, y2 ) = event_point
         menu_point = ( x1+x2, y1+y2 )
-        print pos
-        print "right click", menu_point
+        #print pos
+        #print "right click", menu_point
 
         self.PopupMenu(m, menu_point)
 
@@ -1142,8 +1142,8 @@ class ModanDatasetViewer(wx.Dialog):
                 self.object_listctrl.SetItemImage(i, 1, 1)
                 self.ThreeDViewer.ToggleObjectVisibility(i)
         self.ThreeDViewer.Refresh(False)
-        print self.selected_object_list
-        print "hide others"
+        #print self.selected_object_list
+        #print "hide others"
 
     def OnShowOthers(self,event):
         for i in range(len(self.ThreeDViewer.dataset.object_list)):
@@ -1151,8 +1151,8 @@ class ModanDatasetViewer(wx.Dialog):
                 self.object_listctrl.SetItemImage(i, 0, 0)
                 self.ThreeDViewer.ToggleObjectVisibility(i)
         self.ThreeDViewer.Refresh(False)
-        print self.selected_object_list
-        print "hide others"
+        #print self.selected_object_list
+        #print "hide others"
 
     def OnXAxis(self, event):
         x = self.xAxisCombo.GetValue()
