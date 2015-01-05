@@ -57,7 +57,8 @@ LM_MISSING_VALUE = -99999
 
 DIALOG_SIZE = wx.Size(1024, 768)
 landmarkSeqWidth = 40
-landmarkCoordWidth = 60
+landmarkCoordWidth_2D = 89
+landmarkCoordWidth_3D = 59
 landmarkCoordHeight = 22
 
 def piltoimage(pil, alpha=True):
@@ -1181,15 +1182,10 @@ class ModanObjectDialog(wx.Dialog):
         """ Landmarks : replace with Grid control or its subclass later"""
         self.landmarkLabel = wx.StaticText(panel, -1, 'Landmarks', style=wx.ALIGN_CENTER)
         self.forms['landmark_list'] = wx.ListCtrl(panel, CONTROL_ID['ID_LM_GRID_CTRL'], style=wx.LC_REPORT)
-        self.forms['landmark_list'].InsertColumn(0, 'X', width=landmarkCoordWidth)
-        self.forms['landmark_list'].InsertColumn(1, 'Y', width=landmarkCoordWidth)
         #    self.forms['landmark_list'].InsertColumn(3,'Z', width=landmarkCoordWidth)
         self.forms['xcoord'] = wx.TextCtrl(panel, id=CONTROL_ID['ID_XCOORD'], value='', style=wx.TE_PROCESS_ENTER)
         self.forms['ycoord'] = wx.TextCtrl(panel, id=CONTROL_ID['ID_YCOORD'], value='', style=wx.TE_PROCESS_ENTER)
         self.forms['zcoord'] = wx.TextCtrl(panel, id=CONTROL_ID['ID_ZCOORD'], value='', style=wx.TE_PROCESS_ENTER)
-        self.forms['xcoord'].SetMinSize((landmarkCoordWidth, landmarkCoordHeight ))
-        self.forms['ycoord'].SetMinSize((landmarkCoordWidth, landmarkCoordHeight ))
-        self.forms['zcoord'].SetMinSize((landmarkCoordWidth, landmarkCoordHeight ))
         self.coordAddButton = wx.Button(panel, CONTROL_ID['ID_COORD_ADD_BUTTON'], 'Add')
         self.coordAddButton.SetMinSize(( landmarkSeqWidth, landmarkCoordHeight))
         self.Bind(wx.EVT_BUTTON, self.AddCoord, id=CONTROL_ID['ID_COORD_ADD_BUTTON'])
@@ -1229,6 +1225,7 @@ class ModanObjectDialog(wx.Dialog):
 
     def set_dimension(self, dimension):
         #print "set dimension", dimension
+
         if dimension == 2:
             self.SetSize(wx.Size(1024, 600))
             self.auto_rotate = False
@@ -1241,6 +1238,8 @@ class ModanObjectDialog(wx.Dialog):
             x_diff = int(size.width / 2.0)
             pos.x += x_diff
             size.width += x_diff
+            self.forms['landmark_list'].InsertColumn(0, 'X', width=landmarkCoordWidth_2D)
+            self.forms['landmark_list'].InsertColumn(1, 'Y', width=landmarkCoordWidth_2D)
             self.forms['xcoord'].SetSize(size)
             self.forms['ycoord'].SetPosition(pos)
             self.forms['ycoord'].SetSize(size)
@@ -1260,7 +1259,9 @@ class ModanObjectDialog(wx.Dialog):
             self.auto_rotate = False
             dimension = 3
             self.forms['zcoord'].Show()
-            self.forms['landmark_list'].InsertColumn(2, 'Z', width=landmarkCoordWidth)
+            self.forms['landmark_list'].InsertColumn(0, 'X', width=landmarkCoordWidth_3D)
+            self.forms['landmark_list'].InsertColumn(1, 'Y', width=landmarkCoordWidth_3D)
+            self.forms['landmark_list'].InsertColumn(2, 'Z', width=landmarkCoordWidth_3D)
             self.TwoDViewer.Hide()
             self.ThreeDViewer.Show()
             self.chkAutoRotate.Show()
@@ -1303,33 +1304,21 @@ class ModanObjectDialog(wx.Dialog):
         self.coordsLabel.SetPosition(( xMargin, y ))
         self.coordsLabel.SetSize(( labelWidth, rowHeight ))
 
-        buttons1 = ( self.forms['xcoord'], self.forms['ycoord'], self.forms['zcoord'], self.coordAddButton )
+        buttons1 = [ self.forms['xcoord'], self.forms['ycoord'] ]
+        if self.dimension == 3:
+            buttons1.append(self.forms['zcoord'])
+        buttons1.append(self.coordAddButton)
+
         x = xMargin
         x += labelWidth + xMargin
-        buttonWidth = int(fieldWidth / 4)
-        buttonWidth = 32
-        buttonHeight = 32
+        buttonWidth = int(fieldWidth / len(buttons1))
         for i in range(len(buttons1)):
             buttons1[i].SetPosition(( x, y ))
-            buttons1[i].SetSize(( buttonWidth, buttonHeight ))
+            buttons1[i].SetSize(( buttonWidth, rowHeight ))
             x += buttonWidth
 
         y += rowHeight + yMargin
         x = xMargin
-        '''
-        for i in range(len(self.groupText)):
-            self.groupLabel[i].Hide()
-            self.groupText[i].Hide()
-            if self.has_dataset:
-                if i < len(self.dataset.groupname_list):
-                    self.groupLabel[i].SetSize(( labelWidth, rowHeight ))
-                    self.groupText[i].SetSize(( fieldWidth, rowHeight ))
-                    self.groupLabel[i].SetPosition(( x, y ))
-                    self.groupText[i].SetPosition(( x + labelWidth + xMargin, y ))
-                    self.groupLabel[i].Show()
-                    self.groupText[i].Show()
-            y += rowHeight + yMargin
-        '''
         # 2D/3D viewer
         x = xMargin
         y = yMargin
@@ -1342,6 +1331,8 @@ class ModanObjectDialog(wx.Dialog):
         self.ThreeDViewer.SetPosition(( x, y ))
         self.ThreeDViewer.SetSize(( viewerWidth, viewerHeight ))
 
+        buttonWidth = 32
+        buttonHeight = 32
         editButtons = (
         self.landmarkButton, self.calibrationButton, self.wireframeButton, self.baselineButton, self.missingDataButton )
         imageButtons = ( self.imageCopyButton, self.imagePasteButton, self.imageLoadButton )
@@ -1643,6 +1634,7 @@ class ModanObjectDialog(wx.Dialog):
             self.mdobject.unpack_landmark()
 
         for lm in self.mdobject.landmark_list:
+            #print lm.coords
             self.AppendLandmark(lm)
             #print lm, lm.lmseq
         #self.TwoDViewer.DrawToBuffer()
@@ -1738,31 +1730,21 @@ class ModanObjectDialog(wx.Dialog):
         self.dataset.baseline_point_list = self.baseline_point_list
 
     def AppendLandmark(self, landmark):
-        x, y = landmark.coords[0], landmark.coords[1]
-        if landmark.dim == 3:
-            z = landmark.coords[2]
+        coords = landmark.coords[:]
         is_missing_data = False
-        if x == LM_MISSING_VALUE and y == LM_MISSING_VALUE:
+        if coords[0] == LM_MISSING_VALUE and coords[1] == LM_MISSING_VALUE:
             is_missing_data = True
-        #print seq, xcoord
         self.landmark_list.append(landmark)
-        #print self.landmark_list[-1]
+
         if self.coords_in_millimeter and self.ppmm > 0:
-            #print "coords in millimeter, in appendlandmark"
-            x /= self.ppmm
-            y /= self.ppmm
-        #print self.ppmm
+            coords = [ x / self.ppmm for x in coords ]
+
         nums = []
-        for num in [x,y]:
-            #print num
-            #print "[" +str(num)+"]"
-            if num == '':
-                num = 0
-            num = float(num)
-            if num != int(num):
-                num *= 1000.0
-                num = math.floor(num + 0.5)
-                num /= 1000.0
+        for num in coords:
+            if float(num) != int(num):
+                num = math.floor( ( num * 1000 ) + 0.5 ) / 1000.0
+            else:
+                num = int(num)
             nums.append(num)
         if is_missing_data:
             self.forms['landmark_list'].Append([LM_MISSING_VALUE for n in nums])
