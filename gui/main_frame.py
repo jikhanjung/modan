@@ -44,6 +44,7 @@ class ModanFrame(wx.Frame):
         wx.Frame.__init__(self, parent, wid, title, wx.DefaultPosition, CONST['WINDOW_SIZE'])
         self.statusbar = self.CreateStatusBar()
         self.app = wx.GetApp()
+        self.object_list_proportion = -1
 
         # # Toolbar
         toolbar = self.CreateToolBar()
@@ -101,9 +102,24 @@ class ModanFrame(wx.Frame):
         self.tree_splitter.SplitVertically(self.dataset_tree_pane, self.object_splitter, CONST['TREE_PANE_WIDTH'])
         self.Bind(wx.EVT_SIZE, self.on_resize)
 
+        self.Bind(wx.EVT_SPLITTER_SASH_POS_CHANGED, self.on_sash_move)
+
         icon_file = "icon/modan.ico"
         icon1 = wx.Icon(icon_file, wx.BITMAP_TYPE_ICO)
         self.SetIcon(icon1)
+        self.object_list_proportion = self.object_list_pane.GetSize()[1] / float( self.GetClientSize()[1])
+        #print self.object_list_proportion
+        #print self.GetClientSize(), self.object_splitter.GetSize(), self.object_list_pane.GetSize()
+        #print
+
+    def on_sash_move(self,event):
+        #print self.object_splitter.GetSashPosition()
+        #print self.object_splitter.GetSashSize()
+        #print "new proportion:", self.object_splitter.GetSize()[1], "=", self.object_list_pane.GetSize()[1], 'vs', self.object_content_pane.GetSize()[1], '+', self.object_splitter.GetSashSize(), "to", self.object_splitter.GetSashPosition()
+        #print self.object_splitter.GetSize(), self.object_list_pane.GetSize(), self.object_content_pane.GetSize()
+        self.object_list_proportion = self.object_splitter.GetSashPosition() / float(self.object_list_pane.GetSize()[1] + self.object_content_pane.GetSize()[1])
+        #print self.object_list_pane.GetSize()[1], self.object_list_pane.GetSize()[1], self.object_content_pane.GetSize()[1]
+        #print "object_list proportion",self.object_list_proportion
 
     def open_db_dialog(self, event):
         newpath = self.open_file_dialog("Choose a DB file to open")
@@ -215,6 +231,16 @@ class ModanFrame(wx.Frame):
         export_dialog.Destroy()
 
     def on_resize(self, event):
+        #print self.object_list_pane.GetSize()[1], self.object_list_pane.GetSize()[1], self.object_content_pane.GetSize()[1]
+        #print "object_list proportion",self.object_list_proportion
+
+        if self.object_list_proportion > 0:
+            object_pane_width, new_total_height = self.object_splitter.GetSize()
+
+            new_list_height = int( ( new_total_height - self.object_splitter.GetSashSize() ) * self.object_list_proportion )
+            #print self.object_list_proportion, object_pane_width, new_list_height, new_total_height
+            self.object_splitter.SetSashPosition( new_list_height )
+
         self.object_list_pane.OnResize()
         event.Skip()
 
