@@ -62,7 +62,7 @@ class MdColorScheme:
         return ( r / 255.0, g / 255.0, b / 255.0 )
 
 
-class MdCanvasBase(glcanvas.GLCanvas):
+class Md3DCanvas(glcanvas.GLCanvas):
     def __init__(self, parent):
         glcanvas.GLCanvas.__init__(self, parent, -1)
         self.print_log = True
@@ -89,6 +89,8 @@ class MdCanvasBase(glcanvas.GLCanvas):
         self.size = None
         self.mdobject = None
         self.dataset = None
+        self.baseline_point_list = []
+        self.edge_list = []
         #self.color_scheme = None
         self.init_control = False
         self.interval = 50
@@ -572,11 +574,6 @@ class MdCanvasBase(glcanvas.GLCanvas):
         event.Skip()
 
 
-class MdCanvas(MdCanvasBase):
-    #def __init__(self, parent):
-    #  MdCanvasBase.__init__(self, parent )
-    #self.init = False
-    #self.InitGL()
     def OnPaint(self, event):
         if self.print_log:
             pass  #print "OnPaint"
@@ -677,7 +674,7 @@ class MdCanvas(MdCanvasBase):
             elif i == self.begin_baseline_idx or i == self.end_baseline_idx:
                 glColor3f(self.color.meanshape_wireframe[0], self.color.meanshape_wireframe[1],
                           self.color.meanshape_wireframe[2])
-            elif i in self.GetParent().GetParent().baseline_point_list and self.show_baseline:
+            elif i in self.baseline_point_list and self.show_baseline:
                 glColor3f(0.0, 0.0, 1.0)
             else:
                 glColor3f(original_color[0], color[1], color[2])

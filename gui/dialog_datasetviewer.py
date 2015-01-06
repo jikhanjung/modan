@@ -5,7 +5,7 @@ import math
 from wx.lib.plot import *
 import numpy
 
-from gui.opengltest import MdCanvas
+from gui.md_3d_canvas import Md3DCanvas
 from libpy.modan_dbclass import MdDatasetView
 from libpy.mdstatistics import MdPrincipalComponent2
 from libpy.mdstatistics import MdCanonicalVariate
@@ -215,7 +215,7 @@ class ModanDatasetViewer(wx.Dialog):
         #self.superimposition = ID_RD_PROCRUSTES
         self.selected_object_list = []
 
-        self.ThreeDViewer = MdCanvas(panel)
+        self.ThreeDViewer = Md3DCanvas(panel)
         self.ThreeDViewer.SetMinSize((400, 400))
         self.ResultViewer = wx.Notebook(panel)
         self.eigenvalue_listctrl = wx.ListCtrl(self.ResultViewer, CONTROL_ID['ID_EIGENVALUE_LISTCTRL'], style=wx.LC_REPORT)

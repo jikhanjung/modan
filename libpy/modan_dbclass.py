@@ -723,6 +723,10 @@ class MdDatasetView:
             self.object_list.append(MdObjectView(mo))
         self.edge_list = dataset.edge_list[:]
         self.propertyname_list = dataset.propertyname_list[:]
+        if dataset.polygons != '':
+            dataset.unpack_polygons()
+        if dataset.baseline != '':
+            dataset.unpack_baseline()
         self.baseline_point_list = dataset.baseline_point_list[:]
 
     def set_reference_shape(self, shape):
