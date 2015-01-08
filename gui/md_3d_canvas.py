@@ -1,10 +1,9 @@
-import sys
-import math
-from time import clock, sleep
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
+import math
 import wx
 from wx import glcanvas
-import OpenGL.platform.win32
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
@@ -24,16 +23,16 @@ IDX_SBR = 1
 IDX_GLS = 2
 IDX_RFTRA = 3
 
-WIREFRAME_MODE = 1
 MODE_3D_WIREFRAME = 1
 
-ID_LANDMARK_MODE = 4003
-ID_CALIBRATION_MODE = 4004
-ID_LANDMARK_EDIT_MODE = 4005
-ID_WIREFRAME_MODE = 4006
-ID_WIREFRAME_EDIT_MODE = 4007
-ID_BASELINE_MODE = 4008
-ID_BASELINE_EDIT_MODE = 4009
+CONST = {}
+CONST['ID_LANDMARK_MODE'] = 4003
+CONST['ID_CALIBRATION_MODE'] = 4004
+CONST['ID_LANDMARK_EDIT_MODE'] = 4005
+CONST['ID_WIREFRAME_MODE'] = 4006
+CONST['ID_WIREFRAME_EDIT_MODE'] = 4007
+CONST['ID_BASELINE_MODE'] = 4008
+CONST['ID_BASELINE_EDIT_MODE'] = 4009
 
 
 class MdColorScheme:
@@ -110,7 +109,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
         self.rotation_timer = wx.Timer(self)
         self.render_mode = OpenGL.GL.GL_RENDER
 
-        self.mode = ID_LANDMARK_MODE
+        self.mode = CONST['ID_LANDMARK_MODE']
         self.is_dragging_wire = False
         self.is_panning = False
         self.is_dragging_baseline = False
@@ -127,22 +126,22 @@ class Md3DCanvas(glcanvas.GLCanvas):
     def SetMode(self, mode):
         #print "set mode:", mode
         self.mode = mode
-        if mode == ID_LANDMARK_MODE:
+        if mode == CONST['ID_LANDMARK_MODE']:
             self.SetCursor(wx.StockCursor(wx.CURSOR_CROSS))
             self.curr_landmark_idx = -1
-        elif mode == ID_CALIBRATION_MODE:
+        elif mode == CONST['ID_CALIBRATION_MODE']:
             self.SetCursor(wx.StockCursor(wx.CURSOR_SIZEWE))
-        elif mode == ID_LANDMARK_EDIT_MODE:
+        elif mode == CONST['ID_LANDMARK_EDIT_MODE']:
             self.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
-        elif mode == ID_WIREFRAME_MODE:
+        elif mode == CONST['ID_WIREFRAME_MODE']:
             #print "wireframe"
             self.SetCursor(wx.StockCursor(wx.CURSOR_SIZEWE))
-        elif mode == ID_WIREFRAME_EDIT_MODE:
+        elif mode == CONST['ID_WIREFRAME_EDIT_MODE']:
             self.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
-        elif mode == ID_BASELINE_MODE:
+        elif mode == CONST['ID_BASELINE_MODE']:
             #print "baseline"
             self.SetCursor(wx.StockCursor(wx.CURSOR_SIZEWE))
-        elif mode == ID_BASELINE_EDIT_MODE:
+        elif mode == CONST['ID_BASELINE_EDIT_MODE']:
             self.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
         return
         #print "canvasbase init"
@@ -300,14 +299,14 @@ class Md3DCanvas(glcanvas.GLCanvas):
 
     def OnRightDown(self, event):
         #print "right down"
-        if self.mode == ID_WIREFRAME_MODE:
+        if self.mode == CONST['ID_WIREFRAME_MODE']:
             #print "wireframe_mode right down"
             x, y = event.GetPosition()
             hit, idx = self.IsCursorOnLandmark(x, y)
             if hit and idx > 1000:
                 self.wireidx_to_delete = idx
                 #print self.wirename[lm_idx]
-        elif self.mode == ID_BASELINE_EDIT_MODE:
+        elif self.mode == CONST['ID_BASELINE_EDIT_MODE']:
             x, y = event.GetPosition()
             hit, idx = self.IsCursorOnLandmark(x, y)
             if hit and idx < 1000:
@@ -322,7 +321,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
 
     def OnRightUp(self, event):
         #print "right up"
-        if self.is_panning and self.mode != ID_BASELINE_EDIT_MODE:
+        if self.is_panning and self.mode != CONST['ID_BASELINE_EDIT_MODE']:
             self.is_panning = False
             x, y = event.GetPosition()
             self.panx, self.pany = x, y
@@ -333,7 +332,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
             self.Refresh(False)
             return
 
-        if self.mode == ID_WIREFRAME_MODE:
+        if self.mode == CONST['ID_WIREFRAME_MODE']:
             x, y = event.GetPosition()
             hit, lm_idx = self.IsCursorOnLandmark(x, y)
             if hit and lm_idx > 1000:
@@ -342,7 +341,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
                     parent = self.GetParent().GetParent()
                     from_idx, to_idx = self.wirename[lm_idx].split("_")
                     parent.DeleteWire(from_idx, to_idx)
-        elif self.mode == ID_BASELINE_EDIT_MODE:
+        elif self.mode == CONST['ID_BASELINE_EDIT_MODE']:
             x, y = event.GetPosition()
             hit, idx = self.IsCursorOnLandmark(x, y)
             if hit and idx < 1000:
@@ -361,10 +360,10 @@ class Md3DCanvas(glcanvas.GLCanvas):
         #if self.print_log:
         #print "OnLeftDown", self.mode
         #print self.mode
-        if self.mode == ID_WIREFRAME_EDIT_MODE:
+        if self.mode == CONST['ID_WIREFRAME_EDIT_MODE']:
             self.is_dragging_wire = True
             self.CaptureMouse()
-        elif self.mode == ID_BASELINE_EDIT_MODE:
+        elif self.mode == CONST['ID_BASELINE_EDIT_MODE']:
             x, y = event.GetPosition()
             hit, idx = self.IsCursorOnLandmark(x, y)
             if hit and idx < 1000:
@@ -410,20 +409,6 @@ class Md3DCanvas(glcanvas.GLCanvas):
             #self.end_baseline_idx = -1
             self.ReleaseMouse()
         self.Refresh(False)
-        return
-        #self.SetMode( ID_2D_LANDMARK_MODE )
-        #self.SetCursor( wx.StockCursor( wx.CURSOR_CROSS ) )
-        #print "up"
-        if self.is_dragging:
-            self.is_dragging = False
-            self.x, self.y = event.GetPosition()
-            self.last_xangle = self.last_xangle + (self.x - self.lastx)
-            self.last_yangle = self.last_yangle + self.y - self.lasty
-            self.lastx = self.x
-            self.lasty = self.y
-            self.ReleaseMouse()
-            self.AdjustObjectRotation()
-            self.Refresh(False)
 
     def DrawToBuffer(self):
         self.Refresh(False)
@@ -450,12 +435,12 @@ class Md3DCanvas(glcanvas.GLCanvas):
             self.panx, self.pany = x, y
             self.Refresh(False)
             return
-        if self.mode == ID_WIREFRAME_MODE:
+        if self.mode == CONST['ID_WIREFRAME_MODE']:
             hit, lm_idx = self.IsCursorOnLandmark(x, y)
             if hit and lm_idx < 1000:
-                self.SetMode(ID_WIREFRAME_EDIT_MODE)
+                self.SetMode(CONST['ID_WIREFRAME_EDIT_MODE'])
                 self.begin_wire_idx = lm_idx
-        elif self.mode == ID_WIREFRAME_EDIT_MODE:
+        elif self.mode == CONST['ID_WIREFRAME_EDIT_MODE']:
             hit, lm_idx = self.IsCursorOnLandmark(x, y)
             #print hit, lm_idx, self.begin_wire_idx, self.end_wire_idx
             if not hit or lm_idx > 1000:
@@ -464,7 +449,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
                     self.wire_to_x = x
                     self.wire_to_y = y
                 else:
-                    self.SetMode(ID_WIREFRAME_MODE)
+                    self.SetMode(CONST['ID_WIREFRAME_MODE'])
                     self.begin_wire_idx = -1
                     # draw dangling wire
             else:
@@ -475,14 +460,14 @@ class Md3DCanvas(glcanvas.GLCanvas):
                         self.end_wire_idx = lm_idx
                 else:
                     self.begin_wire_idx = lm_idx
-        elif self.mode == ID_BASELINE_MODE:
+        elif self.mode == CONST['ID_BASELINE_MODE']:
             hit, lm_idx = self.IsCursorOnLandmark(x, y)
             if hit and lm_idx < 1000:
-                self.SetMode(ID_BASELINE_EDIT_MODE)
+                self.SetMode(CONST['ID_BASELINE_EDIT_MODE'])
                 self.begin_baseline_idx = lm_idx
             else:
                 self.begin_baseline_idx = -1
-        elif self.mode == ID_BASELINE_EDIT_MODE:
+        elif self.mode == CONST['ID_BASELINE_EDIT_MODE']:
             hit, lm_idx = self.IsCursorOnLandmark(x, y)
             #print hit, lm_idx, self.begin_wire_idx, self.end_wire_idx
             if not hit:
@@ -491,7 +476,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
                     self.baseline_to_x = self.x
                     self.baseline_to_y = self.y
                 else:
-                    self.SetMode(ID_BASELINE_MODE)
+                    self.SetMode(CONST['ID_BASELINE_MODE'])
                     self.baseline_wire_idx = -1
                     # draw dangling wire
             else:
@@ -500,14 +485,6 @@ class Md3DCanvas(glcanvas.GLCanvas):
                     #self.baseline_to_x, self.baseline_to_y = self.ImageXYtoScreenXY(to_lm[1],to_lm[2])
                     self.end_baseline_idx = lm_idx
         self.Refresh(False)
-        return
-        #print "onmotion"
-        if self.is_dragging:  #event.Dragging() and event.LeftIsDown():
-            self.x, self.y = event.GetPosition()
-            self.Refresh(False)
-        else:
-            x, y = event.GetPosition()
-            self.CheckSelect(x, y)
 
     def OnEraseBackground(self, event):
         #print "EraseBackground"
@@ -812,6 +789,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
         if self.mdobject == None:
             self.SwapBuffers()
             return
+        #print self.mdobject
 
         glClear(OpenGL.GL.GL_COLOR_BUFFER_BIT | OpenGL.GL.GL_DEPTH_BUFFER_BIT)
         glMatrixMode(OpenGL.GL.GL_MODELVIEW)
@@ -835,6 +813,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
         glRotatef(xangle, 0.0, 1.0, 0.0)
         #print self.Size.width
 
+        #print "1"
         if self.dataset != None and (self.dataset.object_list ) > 0:
             if len(self.dataset.object_list) > 20:
                 somode = False
@@ -847,16 +826,19 @@ class Md3DCanvas(glcanvas.GLCanvas):
                     l_color = self.color.selected_object  #( 0.2, 1.0, 0.2 )
                 else:
                     l_color = self.color.object  #( 1.0, 1.0, 0.0 )
+                #print "drawobject"
                 self.DrawObject(mo, xangle, yangle, self.lm_radius, color=l_color, show_index=False,
                                 single_object_mode=somode)
 
         #dataset_end = clock()
         #print "draw single object", dataset_end
+        #print "2"
         """ Draw object: """
         if ( self.dataset != None and self.show_meanshape ):
             self.DrawObject(self.mdobject, xangle, yangle, self.lm_radius * 2, color=self.color.meanshape,
                             show_index=self.show_index)
         elif self.dataset == None:
+            #print "drawobject", self.mdobject.landmark_list[0].coords
             self.DrawObject(self.mdobject, xangle, yangle, self.lm_radius * 2, color=self.color.object,
                             show_index=self.show_index)
 
@@ -889,7 +871,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
                 self.wirename[nameidx] = str(vfrom) + "_" + str(vto)
                 self.DrawWire(yangle, xangle, vfrom, vto, nameidx)
                 nameidx += 1
-
+        #print "3"
         landmark_list = self.GetParent().GetParent().landmark_list
         if self.show_baseline:
             glColor3f(self.color.meanshape_wireframe[0], self.color.meanshape_wireframe[1],
@@ -906,6 +888,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
                     else:
                         self.DrawWire(yangle, xangle, line[i], line[i + 1], nameidx)
                         nameidx += 1
+        #print "4"
         glPopMatrix()
         self.SwapBuffers()
         #end_time = clock()
@@ -930,7 +913,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
 
     def SetSingleObject(self, mo):
         #if self.print_log:
-        print "SetSingleObject", "with", len(mo.landmark_list), "landmarks"
+        #print "SetSingleObject", "with", len(mo.landmark_list), "landmarks"
         #mo.move_to_center()
         #wx.MessageBox( "before adjust perspective" )
         #sleep_time = 2
@@ -1014,7 +997,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
 class OpenGLTestWin(wx.Dialog):
     def __init__(self, parent, id=-1):
         wx.Dialog.__init__(self, parent, size=(400, 400))
-        self.control = MdCanvas(self)
+        self.control = Md3DCanvas(self)
         self.control.SetMinSize((200, 200))
         self.v2 = wx.Button(self, wx.ID_ANY, 'Button #2')
         lb1 = wx.StaticText(self, wx.ID_ANY, 'Video #1')

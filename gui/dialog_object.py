@@ -643,7 +643,7 @@ class ModanObjectDialog(wx.Dialog):
             #print "toggle wireframe"
 
     def ToggleShowWireframe(self, event):
-        print "toggle show wireframe"
+        #print "toggle show wireframe"
         self.show_wireframe = self.chkShowWireframe.GetValue()
         #print self.show_wireframe
         if ( self.show_wireframe ):
@@ -816,28 +816,6 @@ class ModanObjectDialog(wx.Dialog):
         self.baseline_point_list = new_list
         self.dataset.baseline_point_list = self.baseline_point_list
 
-    def AppendLandmark(self, landmark):
-        coords = landmark.coords[:]
-        is_missing_data = False
-        if coords[0] == LM_MISSING_VALUE and coords[1] == LM_MISSING_VALUE:
-            is_missing_data = True
-        self.landmark_list.append(landmark)
-
-        if self.coords_in_millimeter and self.ppmm > 0:
-            coords = [ x / self.ppmm for x in coords ]
-
-        nums = []
-        for num in coords:
-            if float(num) != int(num):
-                num = math.floor( ( num * 1000 ) + 0.5 ) / 1000.0
-            else:
-                num = int(num)
-            nums.append(num)
-        if is_missing_data:
-            self.forms['landmark_list'].Append([LM_MISSING_VALUE for n in nums])
-        else:
-            self.forms['landmark_list'].Append(nums)
-
     def OnClose(self, event):
         if (self.modified):
             msg_box = wx.MessageDialog(self, "You may have modified something. Really close?", "Warning",
@@ -944,7 +922,31 @@ class ModanObjectDialog(wx.Dialog):
 
         #self.forms['landmark_list'].Append( ['a', 'b', 'c', 'd', 'e'] )
 
+    def AppendLandmark(self, landmark):
+        #print "append landmark"
+        coords = landmark.coords[:]
+        is_missing_data = False
+        if coords[0] == LM_MISSING_VALUE and coords[1] == LM_MISSING_VALUE:
+            is_missing_data = True
+        self.landmark_list.append(landmark)
+
+        if self.coords_in_millimeter and self.ppmm > 0:
+            coords = [ x / self.ppmm for x in coords ]
+
+        nums = []
+        for num in coords:
+            if float(num) != int(num):
+                num = math.floor( ( num * 1000 ) + 0.5 ) / 1000.0
+            else:
+                num = int(num)
+            nums.append(num)
+        if is_missing_data:
+            self.forms['landmark_list'].Append([LM_MISSING_VALUE for n in nums])
+        else:
+            self.forms['landmark_list'].Append(nums)
+
     def AddCoord(self, event):
+        #print "add coord"
         lm = [self.forms['xcoord'].GetValue(),self.forms['ycoord'].GetValue()]
         if self.dimension == 3:
             lm.append(self.forms['zcoord'].GetValue())
@@ -988,8 +990,17 @@ class ModanObjectDialog(wx.Dialog):
             #  self.forms['landmark_list'].Append( [title, uri] )
 
     def RefreshThreeDViewer(self):
+        #print "refresh 3d view 1"
+        #for lm in self.landmark_list:
+        #    print lm.coords
         dummy_mdobject = MdObject()
-        dummy_mdobject.landmark_list = self.landmark_list[:]
+        dummy_mdobject.landmark_list = [ MdLandmark(x.coords) for x in self.landmark_list]
+        #mo = mdobject.copy()
+        dummy_mdobject.move_to_center()
+        #print "refresh 3d view 2"
+        #for lm in self.landmark_list:
+        #    print lm.coords
+
         #print "refresh threed viewer", len( self.landmark_list), "landmarks"
         #print "refresh threed viewer", len( dummy_mdobject.landmark_list), "object landmarks"
         self.ThreeDViewer.SetSingleObject(dummy_mdobject)
