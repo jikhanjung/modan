@@ -526,7 +526,7 @@ class ModanObjectDialog(wx.Dialog):
 
     def OnBaselineMode(self, event):
         if self.dimension == 3:
-            return
+            pass #return
         if self.ConfirmWireframeOrBaselineEdit() != wx.ID_YES:
             return
 

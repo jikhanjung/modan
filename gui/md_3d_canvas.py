@@ -90,6 +90,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
         self.mdobject = None
         self.dataset = None
         self.baseline_point_list = []
+        self.baseline_candidate_point_list = []
         self.edge_list = []
         #self.color_scheme = None
         self.init_control = False
@@ -325,20 +326,18 @@ class Md3DCanvas(glcanvas.GLCanvas):
             hit, lm_idx = self.IsCursorOnLandmark(x, y)
             if hit and lm_idx < 1000:
                 self.SetMode(CONST['ID_BASELINE_EDIT_MODE'])
-                self.begin_baseline_idx = lm_idx
-            else:
-                self.begin_baseline_idx = -1
+                #self.begin_baseline_idx = lm_idx
         elif self.mode == CONST['ID_BASELINE_EDIT_MODE']:
             hit, lm_idx = self.IsCursorOnLandmark(x, y)
             #print hit, lm_idx, self.begin_wire_idx, self.end_wire_idx
-            if not hit:
+            if not hit or lm_idx > 1000:
                 self.end_baseline_idx = -1
                 if self.is_dragging_baseline:
                     self.baseline_to_x = self.x
                     self.baseline_to_y = self.y
                 else:
                     self.SetMode(CONST['ID_BASELINE_MODE'])
-                    self.baseline_wire_idx = -1
+                    self.begin_baseline_idx = -1
                     # draw dangling wire
             else:
                 if self.begin_baseline_idx != lm_idx:
@@ -348,6 +347,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
         self.Refresh(False)
 
     def OnLeftDown(self, event):
+        print self.mode, CONST['ID_BASELINE_MODE'], CONST['ID_BASELINE_EDIT_MODE']
         if self.mode == CONST['ID_WIREFRAME_EDIT_MODE']:
             self.is_dragging_wire = True
             x, y = event.GetPosition()
@@ -361,8 +361,22 @@ class Md3DCanvas(glcanvas.GLCanvas):
                 #self.SetMode(CONST['ID_WIREFRAME_EDIT_MODE'])
                 print "left down. edit wireframe!", self.begin_wire_idx
             #
+        elif self.mode == CONST['ID_BASELINE_EDIT_MODE']:
+            self.is_dragging_baseline = True
+            x, y = event.GetPosition()
+            hit, lm_idx = self.IsCursorOnLandmark(x, y)
+            #print hit, lm_idx
+            #print "cursor on landmark", x, y, hit, lm_idx
+            if hit and lm_idx < 1000:
+                self.begin_baseline_idx = lm_idx
+                #print hit, lm_idx
+                #print "cursor on landmark"
+                #self.SetMode(CONST['ID_WIREFRAME_EDIT_MODE'])
+                print "left down. edit baseline!", self.begin_baseline_idx
+            #
 
         else:
+            print "dragging"
             self.is_dragging = True
             self.CaptureMouse()
             self.x, self.y = self.lastx, self.lasty = event.GetPosition()
@@ -374,17 +388,17 @@ class Md3DCanvas(glcanvas.GLCanvas):
                 print "add wire from", self.begin_wire_idx, "to", self.end_wire_idx
                 self.parent_dlg.AppendWire(self.begin_wire_idx, self.end_wire_idx)
                 self.mode = CONST['ID_WIREFRAME_MODE']
-                self.is_dragging_wire = False
-                self.begin_wire_idx = -1
-                self.end_wire_idx = -1
+            self.is_dragging_wire = False
+            self.mode = CONST['ID_WIREFRAME_MODE']
+            self.begin_wire_idx = -1
         elif self.mode == CONST['ID_BASELINE_EDIT_MODE']:
-            if self.begin_wire_idx != self.end_wire_idx and self.begin_wire_idx > 0 and self.end_wire_idx > 0:
-                print "add wire from", self.begin_wire_idx, "to", self.end_wire_idx
-                self.parent_dlg.AppendWire(self.begin_wire_idx, self.end_wire_idx)
-                self.mode = CONST['ID_BASELINE_MODE']
-                self.is_dragging_wire = False
-                self.begin_wire_idx = -1
-                self.end_wire_idx = -1
+            if len(self.parent_dlg.baseline_point_list) == 3:
+                self.parent_dlg.ClearBaseline()
+            if self.begin_baseline_idx > 0:
+                self.parent_dlg.AppendBaselinePoint(self.begin_baseline_idx)
+            self.mode = CONST['ID_BASELINE_MODE']
+            self.is_dragging_baseline = False
+            self.begin_baseline_idx = -1
         elif self.is_dragging:
             self.is_dragging = False
             self.x, self.y = event.GetPosition()
@@ -685,7 +699,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
             elif i == self.begin_baseline_idx or i == self.end_baseline_idx:
                 glColor3f(self.color.meanshape_wireframe[0], self.color.meanshape_wireframe[1],
                           self.color.meanshape_wireframe[2])
-            elif i in self.baseline_point_list and self.show_baseline:
+            elif i in self.parent_dlg.baseline_point_list and self.show_baseline:
                 glColor3f(0.0, 0.0, 1.0)
             else:
                 glColor3f(original_color[0], color[1], color[2])
