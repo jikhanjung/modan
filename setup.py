@@ -169,7 +169,7 @@ data_files = [ ('icon',['icon/modan.ico','icon/modandb.ico','icon/visible.png','
                    ('',['sqlite3.exe']),
                    ('',['glut32.dll','msvcp71.dll']),
                    ('db',['db/modan.moa']),
-                   ('config',['config/modan.yaml','config/schema.sqlite3_' + MODAN_VERSION + '.sql']),
+                   ('config',['config/modan.yaml']),
                    ]
 if use_mplot:
   import matplotlib as mpl

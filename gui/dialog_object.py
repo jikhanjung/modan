@@ -342,7 +342,7 @@ class ModanObjectDialog(wx.Dialog):
             self.chkCoordsInMillimeter.Show()
             self.objectViewer = self.TwoDViewer
         else:
-            self.SetSize(wx.Size(915, 600))
+            self.SetSize(wx.Size(1024, 600))
             self.auto_rotate = False
             dimension = 3
             self.forms['zcoord'].Show()
@@ -506,11 +506,14 @@ class ModanObjectDialog(wx.Dialog):
             self.wireframeButton.SetValue(not self.wireframeButton.GetValue())
         elif mode==CONST['ID_BASELINE_MODE']:
             self.baselineButton.SetValue(not self.baselineButton.GetValue())
-        self.TwoDViewer.SetMode(mode)
+        if self.dimension == 2:
+            self.TwoDViewer.SetMode(mode)
+        elif self.dimension == 3:
+            self.ThreeDViewer.SetMode(mode)
 
     def OnWireframeMode(self, event):
         if self.dimension == 3:
-            return
+            pass #return
         if self.ConfirmWireframeOrBaselineEdit() != wx.ID_YES:
             return
 
