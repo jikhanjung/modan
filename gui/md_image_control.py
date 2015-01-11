@@ -178,185 +178,6 @@ class ModanImageControl(wx.Window):
         #self.RefreshImage()
         return
 
-    def OnRightDown(self, event):
-        # should be a callback function
-        if self.mode == CONST['ID_LANDMARK_EDIT_MODE']:
-            confirmDlg = wx.MessageDialog(self, "Delete landmark?", "Modan", wx.YES_NO | wx.YES_DEFAULT)
-            ret = confirmDlg.ShowModal()
-            if ret != wx.ID_YES:
-                return
-            #print self.temp_landmark_list
-            deleted_landmark = self.temp_landmark_list.pop(self.curr_landmark_idx - 1)
-            #print self.temp_landmark_list
-            self.deleted_landmark_list.append(( self.curr_landmark_idx, deleted_landmark ))
-            parent = self.parent_dlg
-            parent.ClearLandmarkList()
-            for i in range(len(self.temp_landmark_list)):
-                lm = self.temp_landmark_list[i]
-                parent.AppendLandmark(MdLandmark(lm.coords))
-            self.DrawToBuffer()
-        elif self.mode == CONST['ID_WIREFRAME_EDIT_MODE'] and self.hovering_edge != []:
-            confirmDlg = wx.MessageDialog(self, "Delete this edge?", "Modan", wx.YES_NO | wx.YES_DEFAULT)
-            ret = confirmDlg.ShowModal()
-            if ret != wx.ID_YES:
-                return
-            self.parent_dlg.DeleteWire(self.hovering_edge[0], self.hovering_edge[1])
-            self.DrawToBuffer()
-            self.SetMode(CONST['ID_WIREFRAME_MODE'])
-        else:
-            self.is_dragging_image = True
-            self.CaptureMouse()
-            self.x, self.y = self.lastx, self.lasty = event.GetPosition()
-
-    def OnRightUp(self, event):
-        if self.is_dragging_image:
-            self.EndDragging(event)
-
-    def OnKeyDown(self, event):
-        self.cmd_down = event.CmdDown()
-        self.alt_down = event.AltDown()
-
-    #    if self.alt_down and self.mode == ID_2D_LANDMARK_EDIT_MODE:
-    #      self.SetCursor()
-
-    def OnKeyUp(self, event):
-        self.cmd_down = event.CmdDown()
-        self.alt_down = event.AltDown()
-
-    def OnLeftDown(self, event):
-        #print "down"
-        if not self.has_image:
-            return
-        if self.mode == CONST['ID_LANDMARK_MODE']:
-            if self.img_x < 0 or self.img_y < 0:
-                return
-            self.parent_dlg.AppendLandmark(MdLandmark([self.img_x, self.img_y]))
-            self.DrawToBuffer()
-        elif self.mode == CONST['ID_CALIBRATION_MODE']:
-            self.x, self.y = self.lastx, self.lasty = event.GetPosition()
-            self.calib_x1, self.calib_y1 = self.x, self.y
-            self.calib_x2, self.calib_y2 = self.x, self.y
-            #self.calib_y1 = self.y
-            self.DrawToBuffer()
-            self.is_calibrating = True
-            self.CaptureMouse()
-        elif self.mode == CONST['ID_LANDMARK_EDIT_MODE']:
-            self.x, self.y = self.lastx, self.lasty = event.GetPosition()
-            self.is_dragging_landmark = True
-            self.CaptureMouse()
-        elif self.mode == CONST['ID_WIREFRAME_EDIT_MODE']:
-            self.x, self.y = self.lastx, self.lasty = event.GetPosition()
-            self.is_dragging_wire = True
-            self.CaptureMouse()
-        elif self.mode == CONST['ID_BASELINE_EDIT_MODE']:
-            self.x, self.y = self.lastx, self.lasty = event.GetPosition()
-            hit, lm_idx = self.IsCursorOnLandmark()
-            if hit:
-                self.begin_baseline_idx = lm_idx
-                self.is_dragging_baseline = True
-                self.CaptureMouse()
-
-
-    def IsImageInside(self):
-        x1 = y1 = 0
-        x2 = self.origimg.GetWidth()
-        y2 = self.origimg.GetHeight()
-        scr_x, scr_y = self.ImageXYtoScreenXY(x1, y1)
-        #print scr_x, scr_y
-        if scr_x > self.GetSize().width or scr_y > self.GetSize().height:
-            #print "not inside 1"
-            return False
-        scr_x, scr_y = self.ImageXYtoScreenXY(x2, y2)
-        #print scr_x, scr_y
-        if scr_x < 0 or scr_y < 0:
-            #print "not inside 2"
-            return False
-        return True
-
-
-    def OnLeftUp(self, event):
-        #print "up"
-        if self.is_dragging_image:
-            self.EndDragging(event)
-        elif self.is_calibrating:
-            self.EndCalibration(event)
-        elif self.is_dragging_landmark:
-            self.is_dragging_landmark = False
-            self.ReleaseMouse()
-        elif self.is_dragging_wire:
-            self.x, self.y = event.GetPosition()
-            hit, lm_idx = self.IsCursorOnLandmark()
-            if hit:
-                self.parent_dlg.AppendWire(self.begin_wire_idx, self.end_wire_idx)
-            self.is_dragging_wire = False
-            self.begin_wire_idx = self.end_wire_idx
-            self.end_wire_idx = -1
-            self.ReleaseMouse()
-        elif self.is_dragging_baseline:
-            self.x, self.y = event.GetPosition()
-            hit, lm_idx = self.IsCursorOnLandmark()
-            if hit:
-                parent = self.parent_dlg
-                if lm_idx == self.begin_baseline_idx:
-                    if len(parent.baseline_point_list) == 2:
-                        parent.ClearBaseline()
-                    parent.AppendBaselinePoint(lm_idx)
-                else:
-                    parent.ClearBaseline()
-                    parent.AppendBaselinePoint(self.begin_baseline_idx)
-                    parent.AppendBaselinePoint(lm_idx)
-
-            self.is_dragging_baseline = False
-            self.begin_baseline_idx = self.end_baseline_idx
-            self.end_baseline_idx = -1
-            self.ReleaseMouse()
-
-            #self.SetMode( ID_2D_LANDMARK_MODE )
-            #self.SetCursor( wx.StockCursor( wx.CURSOR_CROSS ) )
-
-    def EndCalibration(self, event):
-        if self.is_calibrating:
-            self.is_calibrating = False
-            self.in_motion = False
-            self.x, self.y = event.GetPosition()
-            self.calib_x2, self.calib_y2 = self.x, self.y
-            #self.calib_y2 = self.y
-            self.ReleaseMouse()
-            #print self.calib_x1, self.calib_y1, self.calib_x2, self.calib_y2
-            #x2 = float( self.calib_x2 - self.calib_x1 ) ** 2.0
-            #y2 = float( self.calib_y2 - self.calib_y1 ) ** 2.0
-            dist = self.get_distance(self.calib_x1, self.calib_y1, self.calib_x2, self.calib_y2)
-            #dist = ( ( self.calib_x2 - self.calib_x1 ) ** 2 + ( self.calib_y2 - self.calib_y1 ) ** 2 ) ** 1/2
-            actual_dist = dist / self.zoom
-            #print x2, y2, dist, actual_dist
-            #print
-
-            calibDlg = UnitCalibrationDlg(self, -1)
-            res = calibDlg.ShowModal()
-            if res == wx.ID_OK:
-                length = calibDlg.GetValue()
-                self.pixels_per_millimeter = float(actual_dist) / float(length)
-                #print self.pixels_per_millimeter, "pixels in 1 mm"
-            calibDlg.Destroy()
-            self.DrawToBuffer()
-            self.parent_dlg.ApplyCalibrationResult()
-            self.SetMode(CONST['ID_LANDMARK_MODE'])
-            #self.mode = ID_2D_LANDMARK_MODE
-            #self.Refresh(False)
-
-    def EndDragging(self, event):
-        if self.is_dragging_image:
-            self.in_motion = False
-            self.is_dragging_image = False
-            self.x, self.y = event.GetPosition()
-            self.img_left = self.img_left + (self.x - self.lastx)
-            self.img_top = self.img_top + self.y - self.lasty
-            self.lastx = self.x
-            self.lasty = self.y
-            self.ReleaseMouse()
-            #self.AdjustObjectRotation()
-            self.Refresh(False)
-
     def OnMotion(self, event):
         t0 = time.time()
         #print self.mode
@@ -493,6 +314,184 @@ class ModanImageControl(wx.Window):
         #print "on motion 1", time.time() - t0
         self.DrawToBuffer()
         #print "on motion 2", time.time() - t0
+
+    def OnRightDown(self, event):
+        # should be a callback function
+        if self.mode == CONST['ID_LANDMARK_EDIT_MODE']:
+            confirmDlg = wx.MessageDialog(self, "Delete landmark?", "Modan", wx.YES_NO | wx.YES_DEFAULT)
+            ret = confirmDlg.ShowModal()
+            if ret != wx.ID_YES:
+                return
+            #print self.temp_landmark_list
+            deleted_landmark = self.temp_landmark_list.pop(self.curr_landmark_idx - 1)
+            #print self.temp_landmark_list
+            self.deleted_landmark_list.append(( self.curr_landmark_idx, deleted_landmark ))
+            parent = self.parent_dlg
+            parent.ClearLandmarkList()
+            for i in range(len(self.temp_landmark_list)):
+                lm = self.temp_landmark_list[i]
+                parent.AppendLandmark(MdLandmark(lm.coords))
+            self.DrawToBuffer()
+        elif self.mode == CONST['ID_WIREFRAME_EDIT_MODE'] and self.hovering_edge != []:
+            confirmDlg = wx.MessageDialog(self, "Delete this edge?", "Modan", wx.YES_NO | wx.YES_DEFAULT)
+            ret = confirmDlg.ShowModal()
+            if ret != wx.ID_YES:
+                return
+            self.parent_dlg.DeleteWire(self.hovering_edge[0], self.hovering_edge[1])
+            self.DrawToBuffer()
+            self.SetMode(CONST['ID_WIREFRAME_MODE'])
+        else:
+            self.is_dragging_image = True
+            self.CaptureMouse()
+            self.x, self.y = self.lastx, self.lasty = event.GetPosition()
+
+    def OnRightUp(self, event):
+        if self.is_dragging_image:
+            self.EndDragging(event)
+
+    def OnKeyDown(self, event):
+        self.cmd_down = event.CmdDown()
+        self.alt_down = event.AltDown()
+
+    #    if self.alt_down and self.mode == ID_2D_LANDMARK_EDIT_MODE:
+    #      self.SetCursor()
+
+    def OnKeyUp(self, event):
+        self.cmd_down = event.CmdDown()
+        self.alt_down = event.AltDown()
+
+    def OnLeftDown(self, event):
+        #print "down"
+        if not self.has_image:
+            return
+        if self.mode == CONST['ID_LANDMARK_MODE']:
+            if self.img_x < 0 or self.img_y < 0:
+                return
+            self.parent_dlg.AppendLandmark(MdLandmark([self.img_x, self.img_y]))
+            self.DrawToBuffer()
+        elif self.mode == CONST['ID_CALIBRATION_MODE']:
+            self.x, self.y = self.lastx, self.lasty = event.GetPosition()
+            self.calib_x1, self.calib_y1 = self.x, self.y
+            self.calib_x2, self.calib_y2 = self.x, self.y
+            #self.calib_y1 = self.y
+            self.DrawToBuffer()
+            self.is_calibrating = True
+            self.CaptureMouse()
+        elif self.mode == CONST['ID_LANDMARK_EDIT_MODE']:
+            self.x, self.y = self.lastx, self.lasty = event.GetPosition()
+            self.is_dragging_landmark = True
+            self.CaptureMouse()
+        elif self.mode == CONST['ID_WIREFRAME_EDIT_MODE']:
+            self.x, self.y = self.lastx, self.lasty = event.GetPosition()
+            self.is_dragging_wire = True
+            self.CaptureMouse()
+        elif self.mode == CONST['ID_BASELINE_EDIT_MODE']:
+            self.x, self.y = self.lastx, self.lasty = event.GetPosition()
+            hit, lm_idx = self.IsCursorOnLandmark()
+            if hit:
+                self.begin_baseline_idx = lm_idx
+                self.is_dragging_baseline = True
+                self.CaptureMouse()
+
+    def OnLeftUp(self, event):
+        #print "up"
+        if self.is_dragging_image:
+            self.EndDragging(event)
+        elif self.is_calibrating:
+            self.EndCalibration(event)
+        elif self.is_dragging_landmark:
+            self.is_dragging_landmark = False
+            self.ReleaseMouse()
+        elif self.is_dragging_wire:
+            self.x, self.y = event.GetPosition()
+            hit, lm_idx = self.IsCursorOnLandmark()
+            if hit:
+                self.parent_dlg.AppendWire(self.begin_wire_idx, self.end_wire_idx)
+            self.is_dragging_wire = False
+            self.begin_wire_idx = self.end_wire_idx
+            self.end_wire_idx = -1
+            self.ReleaseMouse()
+        elif self.is_dragging_baseline:
+            self.x, self.y = event.GetPosition()
+            hit, lm_idx = self.IsCursorOnLandmark()
+            if hit:
+                parent = self.parent_dlg
+                if lm_idx == self.begin_baseline_idx:
+                    if len(parent.baseline_point_list) == 2:
+                        parent.ClearBaseline()
+                    parent.AppendBaselinePoint(lm_idx)
+                else:
+                    parent.ClearBaseline()
+                    parent.AppendBaselinePoint(self.begin_baseline_idx)
+                    parent.AppendBaselinePoint(lm_idx)
+
+            self.is_dragging_baseline = False
+            self.begin_baseline_idx = self.end_baseline_idx
+            self.end_baseline_idx = -1
+            self.ReleaseMouse()
+
+            #self.SetMode( ID_2D_LANDMARK_MODE )
+            #self.SetCursor( wx.StockCursor( wx.CURSOR_CROSS ) )
+
+    def IsImageInside(self):
+        x1 = y1 = 0
+        x2 = self.origimg.GetWidth()
+        y2 = self.origimg.GetHeight()
+        scr_x, scr_y = self.ImageXYtoScreenXY(x1, y1)
+        #print scr_x, scr_y
+        if scr_x > self.GetSize().width or scr_y > self.GetSize().height:
+            #print "not inside 1"
+            return False
+        scr_x, scr_y = self.ImageXYtoScreenXY(x2, y2)
+        #print scr_x, scr_y
+        if scr_x < 0 or scr_y < 0:
+            #print "not inside 2"
+            return False
+        return True
+
+    def EndCalibration(self, event):
+        if self.is_calibrating:
+            self.is_calibrating = False
+            self.in_motion = False
+            self.x, self.y = event.GetPosition()
+            self.calib_x2, self.calib_y2 = self.x, self.y
+            #self.calib_y2 = self.y
+            self.ReleaseMouse()
+            #print self.calib_x1, self.calib_y1, self.calib_x2, self.calib_y2
+            #x2 = float( self.calib_x2 - self.calib_x1 ) ** 2.0
+            #y2 = float( self.calib_y2 - self.calib_y1 ) ** 2.0
+            dist = self.get_distance(self.calib_x1, self.calib_y1, self.calib_x2, self.calib_y2)
+            #dist = ( ( self.calib_x2 - self.calib_x1 ) ** 2 + ( self.calib_y2 - self.calib_y1 ) ** 2 ) ** 1/2
+            actual_dist = dist / self.zoom
+            #print x2, y2, dist, actual_dist
+            #print
+
+            calibDlg = UnitCalibrationDlg(self, -1)
+            res = calibDlg.ShowModal()
+            if res == wx.ID_OK:
+                length = calibDlg.GetValue()
+                self.pixels_per_millimeter = float(actual_dist) / float(length)
+                #print self.pixels_per_millimeter, "pixels in 1 mm"
+            calibDlg.Destroy()
+            self.DrawToBuffer()
+            self.parent_dlg.ApplyCalibrationResult()
+            self.SetMode(CONST['ID_LANDMARK_MODE'])
+            #self.mode = ID_2D_LANDMARK_MODE
+            #self.Refresh(False)
+
+    def EndDragging(self, event):
+        if self.is_dragging_image:
+            self.in_motion = False
+            self.is_dragging_image = False
+            self.x, self.y = event.GetPosition()
+            self.img_left = self.img_left + (self.x - self.lastx)
+            self.img_top = self.img_top + self.y - self.lasty
+            self.lastx = self.x
+            self.lasty = self.y
+            self.ReleaseMouse()
+            #self.AdjustObjectRotation()
+            self.Refresh(False)
+
 
     def get_dist_criterion(self):
         dist_criterion = 5.0

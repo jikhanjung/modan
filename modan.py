@@ -111,6 +111,16 @@ class ModanGUI(wx.App):
 
         #print "Session in get_session:", self.session
         return self.session
+# standard decorator style
 
 app = ModanGUI(0)
+
+from sqlalchemy import event
+@event.listens_for(app.session, 'after_attach')
+def receive_after_attach(session, instance):
+    #print session, instance
+    pass
+
+    # ... (event handling logic) ...
+
 app.MainLoop()

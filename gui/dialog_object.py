@@ -151,7 +151,7 @@ class ModanObjectDialog(wx.Dialog):
         self.dataset = None
 
         self.landmark_list = []
-        self.mdobject = MdObject()
+        #self.mdobject = MdObject()
         self.baseline_point_list = []
         self.edge_list = []
         self.show_index = True
@@ -301,6 +301,7 @@ class ModanObjectDialog(wx.Dialog):
         panel.Fit()
         #self.Show()
         self.forms['objname'].SetFocus()
+        #print "end init"
 
     def OnSlide(self, event):
         bright = self.slBright.GetValue()
@@ -690,11 +691,9 @@ class ModanObjectDialog(wx.Dialog):
         #self.TwoDViewer.DrawToBuffer()
 
     def set_mdobject(self, mdobject):
-        #print "set mdobject"
-        session = self.app.get_session()
+        #print "set mdobject", mdobject
+        #session = self.app.get_session()
         #print "session in setmodanobject:", session
-        if mdobject not in session:
-            session.add( mdobject )
         self.mdobject = mdobject
 
         self.forms['id'].SetLabel("%d" % mdobject.id)
@@ -730,7 +729,9 @@ class ModanObjectDialog(wx.Dialog):
         #self.TwoDViewer.DrawToBuffer()
 
         #self.RefreshLinkList()
-        mo = mdobject.copy()
+        #print "a"
+        mo = MdObjectView(mdobject)
+        #print "b"
         mo.move_to_center()
 
         if mdobject.dataset.dimension == 3:
@@ -855,16 +856,21 @@ class ModanObjectDialog(wx.Dialog):
         wx.BeginBusyCursor()
         ret = wx.ID_EDIT
         if self.mdobject:
+            print "already have mdobject"
             mo = self.mdobject
+            print self.mdobject, mo
         else:
+            print "new mdobject"
             mo = self.mdobject = MdObject()
+            mo.dataset_id = self.dataset.id
+            session.add(mo)
 
         mo.objname = self.forms['objname'].GetValue()
         mo.objdesc = self.forms['objdesc'].GetValue()
         #mo.scale = self.forms['scale'].GetValue()
-        mo.dataset_id = self.dataset.id
         mo.landmark_list = self.landmark_list[:]
         mo.pack_landmark()
+        print self.mdobject, mo
 
         if self.TwoDViewer.has_image:
             if len(mo.image_list)==0:
@@ -874,15 +880,16 @@ class ModanObjectDialog(wx.Dialog):
         #for i in range(len(self.dataset.groupname_list)):
         #    mo.group_list[i] = self.groupText[i].GetValue()
         #print "session in dialog_object", session
-        if mo not in session:
-            session.add(mo)
+
+        #if mo not in session:
 
         self.frame.object_content_pane.SetObjectContent(mo)
 
-        if self.is_baseline_changed or self.is_wireframe_changed:
-            #print self.is_baseline_changed
-            #print self.baseline_point_list
+        if self.is_wireframe_changed:
             self.dataset.pack_wireframe()
+            ret = wx.ID_EDIT
+
+        if self.is_baseline_changed:
             self.dataset.pack_baseline()
             ret = wx.ID_EDIT
 
@@ -997,6 +1004,7 @@ class ModanObjectDialog(wx.Dialog):
         #for lm in self.landmark_list:
         #    print lm.coords
         dummy_mdobject = MdObject()
+        print "dummy object", dummy_mdobject
         dummy_mdobject.landmark_list = [ MdLandmark(x.coords) for x in self.landmark_list]
         #mo = mdobject.copy()
         dummy_mdobject.move_to_center()

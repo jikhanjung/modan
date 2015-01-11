@@ -259,7 +259,7 @@ class ModanDatasetViewer(wx.Dialog):
             #self.MplotViewer.mpl_connect('pick_event', self.OnPick)
         self.ResultViewer.SetMinSize((400, 400))
 
-        self.baseline_points = []
+        self.baseline_point_list = []
         self.edge_list = []
         self.landmark_list = []
 
@@ -945,6 +945,9 @@ class ModanDatasetViewer(wx.Dialog):
             self.object_listctrl.SetItemImage(i, 0, 0)
             i += 1
         self.ThreeDViewer.SetDataset(self.dataset)
+        #print self.dataset.wireframe, self.dataset.edge_list
+        self.baseline_point_list = self.dataset.baseline_point_list
+        self.edge_list = self.dataset.edge_list
 
         self.PerformPCA()
 

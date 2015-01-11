@@ -197,9 +197,12 @@ class ModanFrame(wx.Frame):
             return
 
         new_dialog = ModanObjectDialog(self, -1)
+        #print "after init"
         new_dialog.SetDataset(self.dataset_tree_pane.dataset)
+        #print "after set dataset"
         if mdobject:
             new_dialog.set_mdobject(mdobject)
+            #print "after set object"
         ret = new_dialog.ShowModal()
         if ret == wx.ID_EDIT:
             print "refresh tree"

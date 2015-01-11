@@ -68,6 +68,8 @@ class Md3DCanvas(glcanvas.GLCanvas):
         self.parent_dlg = parent.GetParent()
         self.init = False
         # initial mouse position
+        self.hovering_edge = []
+        self.hovering_edge_idx = -1
         self.color = MdColorScheme()
         self.r = 1
         self.superimposition_method = IDX_GLS
@@ -299,11 +301,20 @@ class Md3DCanvas(glcanvas.GLCanvas):
             hit, lm_idx = self.IsCursorOnLandmark(x, y)
             #print hit, lm_idx
             #print "cursor on landmark", x, y, hit, lm_idx
-            if hit and lm_idx < 1000:
-                #print hit, lm_idx
-                #print "cursor on landmark"
-                self.SetMode(CONST['ID_WIREFRAME_EDIT_MODE'])
-                #self.begin_wire_idx = lm_idx
+            if hit:
+                if lm_idx < 1000:
+                    #print hit, lm_idx
+                    #print "cursor on landmark"
+                    self.SetMode(CONST['ID_WIREFRAME_EDIT_MODE'])
+                    #self.begin_wire_idx = lm_idx
+                else:
+                    self.hovering_edge_idx = lm_idx
+                    #from_idx, to_idx = self.wirename[lm_idx].split("_")
+                    #self.hovering_edge = [ from_idx, to_idx ]
+                    #self.parent_dlg.DeleteWire(from_idx, to_idx)
+            else:
+                self.hovering_edge_idx = -1
+
         elif self.mode == CONST['ID_WIREFRAME_EDIT_MODE']:
             hit, lm_idx = self.IsCursorOnLandmark(x, y)
             #print hit, lm_idx, self.begin_wire_idx, self.end_wire_idx
@@ -347,7 +358,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
         self.Refresh(False)
 
     def OnLeftDown(self, event):
-        print self.mode, CONST['ID_BASELINE_MODE'], CONST['ID_BASELINE_EDIT_MODE']
+        #print self.mode, CONST['ID_BASELINE_MODE'], CONST['ID_BASELINE_EDIT_MODE']
         if self.mode == CONST['ID_WIREFRAME_EDIT_MODE']:
             self.is_dragging_wire = True
             x, y = event.GetPosition()
@@ -359,7 +370,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
                 #print hit, lm_idx
                 #print "cursor on landmark"
                 #self.SetMode(CONST['ID_WIREFRAME_EDIT_MODE'])
-                print "left down. edit wireframe!", self.begin_wire_idx
+                #print "left down. edit wireframe!", self.begin_wire_idx
             #
         elif self.mode == CONST['ID_BASELINE_EDIT_MODE']:
             self.is_dragging_baseline = True
@@ -372,11 +383,11 @@ class Md3DCanvas(glcanvas.GLCanvas):
                 #print hit, lm_idx
                 #print "cursor on landmark"
                 #self.SetMode(CONST['ID_WIREFRAME_EDIT_MODE'])
-                print "left down. edit baseline!", self.begin_baseline_idx
+                #print "left down. edit baseline!", self.begin_baseline_idx
             #
 
         else:
-            print "dragging"
+            #print "dragging"
             self.is_dragging = True
             self.CaptureMouse()
             self.x, self.y = self.lastx, self.lasty = event.GetPosition()
@@ -385,7 +396,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
         #print "up"
         if self.mode == CONST['ID_WIREFRAME_EDIT_MODE']:
             if self.begin_wire_idx != self.end_wire_idx and self.begin_wire_idx > 0 and self.end_wire_idx > 0:
-                print "add wire from", self.begin_wire_idx, "to", self.end_wire_idx
+                #print "add wire from", self.begin_wire_idx, "to", self.end_wire_idx
                 self.parent_dlg.AppendWire(self.begin_wire_idx, self.end_wire_idx)
                 self.mode = CONST['ID_WIREFRAME_MODE']
             self.is_dragging_wire = False
@@ -418,6 +429,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
             hit, idx = self.IsCursorOnLandmark(x, y)
             if hit and idx > 1000:
                 self.wireidx_to_delete = idx
+                self.hovering_edge_idx = -1
                 #print self.wirename[lm_idx]
         elif self.mode == CONST['ID_BASELINE_EDIT_MODE']:
             x, y = event.GetPosition()
@@ -893,6 +905,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
             self.DrawObject(self.mdobject, xangle, yangle, self.lm_radius * 2, color=self.color.object,
                             show_index=self.show_index, single_object_mode=single_object_mode)
 
+        #print self.show_wireframe, self.parent_dlg.edge_list
         #print "draw wireframe if visible", clock()
         if ( self.dataset != None and self.show_meanshape and self.show_wireframe ) or (
                 self.dataset == None and self.show_wireframe ):
@@ -910,6 +923,8 @@ class Md3DCanvas(glcanvas.GLCanvas):
                     glColor3f(self.color.meanshape_wireframe[0], self.color.meanshape_wireframe[1],
                               self.color.meanshape_wireframe[2])
                 if nameidx == self.wireidx_to_delete:
+                    glColor3f(self.color.selected_wire[0], self.color.selected_wire[1], self.color.selected_wire[2])
+                if nameidx == self.hovering_edge_idx:
                     glColor3f(self.color.selected_wire[0], self.color.selected_wire[1], self.color.selected_wire[2])
                 #print vertices
                 vfrom = int(vertices[0])

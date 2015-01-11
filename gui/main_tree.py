@@ -49,7 +49,7 @@ class MdDatasetTree(wx.TreeCtrl):
             ds = self.GetItemPyData(selected)
             if ds is not None:
                 session = self.app.get_session()
-                print "session in refresh_object_list:", session
+                #print "session in refresh_object_list:", session
                 if ds not in session:
                     session.add(ds)
                 object_list = ds.object_list
