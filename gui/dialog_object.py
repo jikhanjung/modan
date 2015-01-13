@@ -3,13 +3,19 @@
 
 import os
 import wx.lib.buttons as buttons
-
 from libpy.conf import ModanConf
 from libpy.modan_dbclass import *
 from libpy.dataimporter import ModanDataImporter
 from gui.md_3d_canvas import Md3DCanvas
 from gui.md_image_control import ModanImageControl, CONST
 from PIL import Image
+
+from ctypes import util
+try:
+    from OpenGL.platform import win32
+except AttributeError:
+    pass
+
 
 CONTROL_ID = {}
 CONTROL_ID['ID_SAVE_BUTTON'] = 2000

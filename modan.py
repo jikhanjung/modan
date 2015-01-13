@@ -35,6 +35,7 @@ class ModanGUI(wx.App):
             from win32com.shell import shell, shellcon
             #print shell.SHGetFolderPath(0, shellcon.CSIDL_PERSONAL, None, 0)
             self.homepath = shell.SHGetFolderPath(0, shellcon.CSIDL_PERSONAL, None, 0)
+            #print self.homepath
         else:
             self.homepath = os.path.expanduser("~")
 

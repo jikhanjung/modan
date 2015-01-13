@@ -43,7 +43,7 @@ zipfile = r"lib/shardlib"
 options = {"py2exe": {
                       "compressed": 1,
                       "optimize": 2,
-                      #"includes": ["ctypes", "logging"],
+                      #"includes": ["ctypes", "logging","OpenGL.arrays","OpenGL"],
                       #"excludes": ["OpenGL"],
                       }
           }
@@ -136,6 +136,31 @@ Root: HKCR; Subkey: "modan_moa\shell\open\command"; ValueType: string; ValueName
             if res < 32:
                 raise RuntimeError, "ShellExecute failed, error %d" % res
 
+
+try:
+    # py2exe 0.6.4 introduced a replacement modulefinder.
+    # This means we have to add package paths there, not to the built-in
+    # one.  If this new modulefinder gets integrated into Python, then
+    # we might be able to revert this some day.
+    # if this doesn't work, try import modulefinder
+    try:
+        import py2exe.mf as modulefinder
+    except ImportError:
+        import modulefinder
+    import win32com, sys
+    for p in win32com.__path__[1:]:
+        modulefinder.AddPackagePath("win32com", p)
+    for extra in ["win32com.shell"]: #,"win32com.mapi"
+        __import__(extra)
+        m = sys.modules[extra]
+        for p in m.__path__[1:]:
+            modulefinder.AddPackagePath(extra, p)
+except ImportError:
+    # no build path setup, no worries.
+    pass
+
+
+
 #from py2exe.build_exe import py2exe
 from py2exe.build_exe import py2exe
  
@@ -165,7 +190,7 @@ class build_installer(py2exe):
 
 ################################################################
 
-data_files = [ ('icon',['icon/modan.ico','icon/modandb.ico','icon/visible.png','icon/invisible.png','icon/open.png','icon/newdb.png','icon/saveas.png','icon/newobject.png','icon/newdataset.png','icon/export.png','icon/import.png','icon/analyze.png','icon/preferences.png','icon/about.png']),
+data_files = [ ('icon',['icon/modan.ico','icon/modandb.ico','icon/visible_16.png','icon/invisible_16.png','icon/open.png','icon/newdb.png','icon/saveas.png','icon/newobject.png','icon/newdataset.png','icon/export.png','icon/import.png','icon/analyze.png','icon/preferences.png','icon/about.png','icon/landmark_24.png','icon/missing_16.png',"icon/calib_24.png","icon/wireframe_2_16.png","icon/baseline_16.png","icon/load_image_24.png","icon/copy_24.png","icon/paste_24.png"]),
                    ('',['sqlite3.exe']),
                    ('',['glut32.dll','msvcp71.dll']),
                    ('db',['db/modan.moa']),

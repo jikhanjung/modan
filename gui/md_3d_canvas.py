@@ -7,10 +7,16 @@ from wx import glcanvas
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
+import OpenGL.arrays
 
+from OpenGL.plugins import PlatformPlugin, FormatHandler
+from OpenGL.plugins import FormatHandler
+from ctypes import util
+try:
+    from OpenGL.platform import win32
+except AttributeError:
+    pass
 
-# from OpenGL.plugins import PlatformPlugin, FormatHandler
-#from OpenGL.plugins import FormatHandler
 #FormatHandler( 'numpy', 'OpenGL.arrays.numpymodule.NumpyHandler', ['numpy.ndarray'] )
 #fprint( str( OpenGL.plugins.FormatHandler.all() ) )
 #from OpenGL.arrays import formathandler
@@ -749,7 +755,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
                 #print basestr[i]
                 glRasterPos3f(lm.coords[0] - size * (len(basestr[i]) / 2), lm.coords[1] - size * 2.4, lm.coords[2])
                 for letter in list(basestr[i]):
-                    glutBitmapCharacter(OpenGL.GLUT.GLUT_BITMAP_HELVETICA_12, ord(letter))
+                    glutBitmapCharacter(OpenGL.GLUT.GLUT_BITMAP_HELVETICA_12, ctypes.c_int(ord(letter)))
             glEnable(OpenGL.GL.GL_LIGHTING)
 
         if show_index:
@@ -761,7 +767,11 @@ class Md3DCanvas(glcanvas.GLCanvas):
                 glRasterPos3f(lm.coords[0], lm.coords[1] + size * 1.2, lm.coords[2])
                 for letter in list(str(i)):
                     #print ord(letter)
-                    glutBitmapCharacter(OpenGL.GLUT.GLUT_BITMAP_HELVETICA_12, int(ord(letter)))
+                    #print OpenGL.GLUT.GLUT_BITMAP_HELVETICA_12, type(OpenGL.GLUT.GLUT_BITMAP_HELVETICA_12).__name__
+                    #print int(ord(letter)), type(int(ord(letter))).__name__
+                    glutBitmapCharacter(OpenGL.GLUT.GLUT_BITMAP_HELVETICA_12, ord(letter))
+                    #c = 7
+                    #glutBitmapCharacter(ctypes.c_int(c), ctypes.c_int(ord(letter)))
             glEnable(OpenGL.GL.GL_LIGHTING)
         glPopMatrix()
 
