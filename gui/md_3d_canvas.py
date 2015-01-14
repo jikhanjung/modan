@@ -4,13 +4,17 @@
 import math
 import wx
 from wx import glcanvas
-from OpenGL.GL import *
-from OpenGL.GLUT import *
-from OpenGL.GLU import *
-import OpenGL.arrays
+#from OpenGL.GL import *
+#from OpenGL.GLUT import *
+#from OpenGL.GLU import *
+import OpenGL.GL as gl
+import OpenGL.GLU as glu
+import OpenGL.GLUT as glut
+import sys
+#import OpenGL.arrays
 
-from OpenGL.plugins import PlatformPlugin, FormatHandler
-from OpenGL.plugins import FormatHandler
+#from OpenGL.plugins import PlatformPlugin, FormatHandler
+#from OpenGL.plugins import FormatHandler
 from ctypes import util
 try:
     from OpenGL.platform import win32
@@ -117,7 +121,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
         self.Bind(wx.EVT_MOUSEWHEEL, self.OnWheel)
         self.Bind(wx.EVT_ENTER_WINDOW, self.OnMouseEnter)
         self.rotation_timer = wx.Timer(self)
-        self.render_mode = OpenGL.GL.GL_RENDER
+        self.render_mode = gl.GL_RENDER
 
         self.mode = CONST['ID_LANDMARK_MODE']
         self.is_dragging_wire = False
@@ -222,25 +226,25 @@ class Md3DCanvas(glcanvas.GLCanvas):
 
     def IsCursorOnLandmark(self, x, y):
         SIZE = 1024
-        glSelectBuffer(SIZE)  # allocate a selection buffer of SIZE elements
+        gl.glSelectBuffer(SIZE)  # allocate a selection buffer of SIZE elements
 
-        viewport = glGetIntegerv(OpenGL.GL.GL_VIEWPORT)
-        glMatrixMode(OpenGL.GL.GL_PROJECTION)
-        glPushMatrix()
+        viewport = gl.glGetIntegerv(gl.GL_VIEWPORT)
+        gl.glMatrixMode(gl.GL_PROJECTION)
+        gl.glPushMatrix()
 
-        glRenderMode(OpenGL.GL.GL_SELECT)
-        self.render_mode = OpenGL.GL.GL_SELECT
+        gl.glRenderMode(gl.GL_SELECT)
+        self.render_mode = gl.GL_SELECT
         #print x, y
         #viewport = []
 
         #viewport = glGetIntegerv( GL_VIEWPORT )
         #print viewport
 
-        glLoadIdentity()
-        gluPickMatrix(x, (viewport[3] - y), 10, 10, viewport)
-        glFrustum(self.frustum_args['width'] * -1.0, self.frustum_args['width'], self.frustum_args['height'] * -1.0,
+        gl.glLoadIdentity()
+        glu.gluPickMatrix(x, (viewport[3] - y), 10, 10, viewport)
+        gl.glFrustum(self.frustum_args['width'] * -1.0, self.frustum_args['width'], self.frustum_args['height'] * -1.0,
                   self.frustum_args['height'], self.frustum_args['znear'], self.frustum_args['zfar'])
-        gluLookAt(0.0, 0.0, self.offset * -1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+        glu.gluLookAt(0.0, 0.0, self.offset * -1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
 
         #print "on leftdown on draw"
         self.OnDraw()
@@ -249,15 +253,15 @@ class Md3DCanvas(glcanvas.GLCanvas):
         # draw some stuff
 
 
-        buffer = glRenderMode(OpenGL.GL.GL_RENDER)
-        self.render_mode = OpenGL.GL.GL_RENDER
+        buffer = gl.glRenderMode(gl.GL_RENDER)
+        self.render_mode = gl.GL_RENDER
         #print "now render mode"
         hit = False
         top_lmidx = -1
         #print buffer
-        glMatrixMode(OpenGL.GL.GL_PROJECTION)
-        glPopMatrix()
-        glMatrixMode(OpenGL.GL.GL_MODELVIEW)
+        gl.glMatrixMode(gl.GL_PROJECTION)
+        gl.glPopMatrix()
+        gl.glMatrixMode(gl.GL_MODELVIEW)
 
         for hit_record in buffer:
             #print hit_record
@@ -568,7 +572,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
         size = self.size = s
         if self.GetContext():
             self.SetCurrent()
-            glViewport(0, 0, size.width, size.height)
+            gl.glViewport(0, 0, size.width, size.height)
 
             # Maintain 1:1 Aspect Ratio
             """
@@ -585,8 +589,8 @@ class Md3DCanvas(glcanvas.GLCanvas):
             elif size.height > size.width:
                 height = height * (h / w)
             #print width, "x", height
-            glMatrixMode(OpenGL.GL.GL_PROJECTION)
-            glLoadIdentity()
+            gl.glMatrixMode(gl.GL_PROJECTION)
+            gl.glLoadIdentity()
             #print "zoom", self.zoom
 
             znear = 0.1
@@ -607,12 +611,12 @@ class Md3DCanvas(glcanvas.GLCanvas):
             self.frustum_args['znear'] = znear
             self.frustum_args['zfar'] = zfar
 
-            glFrustum(-width, width, bottom_height, top_height, znear, zfar)
-            gluLookAt(0.0, 0.0, self.offset * -1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+            gl.glFrustum(-width, width, bottom_height, top_height, znear, zfar)
+            glu.gluLookAt(0.0, 0.0, self.offset * -1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
             #print
             #print "width height near far offset", width, height, znear, zfar, self.offset
             #print self.r
-            glMatrixMode(OpenGL.GL.GL_MODELVIEW)  # switch back to model view
+            gl.glMatrixMode(gl.GL_MODELVIEW)  # switch back to model view
 
         event.Skip()
 
@@ -650,19 +654,19 @@ class Md3DCanvas(glcanvas.GLCanvas):
 
         length = (axis_end[0] ** 2 + axis_end[1] ** 2 + axis_end[2] ** 2) ** 0.5
         radius = self.wire_radius
-        glPushMatrix()
+        gl.glPushMatrix()
         #glLoadIdentity()
-        cyl = gluNewQuadric()
+        cyl = glu.gluNewQuadric()
         #glTranslate(0, 0, self.offset)
         #glRotatef(yangle, 1.0, 0.0, 0.0)
         #glRotatef(xangle, 0.0, 1.0, 0.0)
-        glTranslate(lm2.coords[0], lm2.coords[1], lm2.coords[2])
+        gl.glTranslate(lm2.coords[0], lm2.coords[1], lm2.coords[2])
         if (angle != 0):
-            glRotate(angle, axis_rotation[0], axis_rotation[1], axis_rotation[2])
+            gl.glRotate(angle, axis_rotation[0], axis_rotation[1], axis_rotation[2])
         if nameidx > 0:
-            glLoadName(nameidx)
-        gluCylinder(cyl, radius, radius, length, 10, 10)
-        glPopMatrix()
+            gl.glLoadName(nameidx)
+        glu.gluCylinder(cyl, radius, radius, length, 10, 10)
+        gl.glPopMatrix()
 
     def SelectLandmark(self, idx_list):
         for i in range(len(self.mdobject.landmark_list)):
@@ -697,54 +701,54 @@ class Md3DCanvas(glcanvas.GLCanvas):
         original_color = color
         #i = 0
         #glTranslate(0, 0, self.offset)
-        glPushMatrix()
+        gl.glPushMatrix()
 
 
         #    single_object_mode = True
         if not single_object_mode:
             #print "point size, glbegin"
-            glPointSize(3)
-            glDisable(OpenGL.GL.GL_LIGHTING)
-            glBegin(OpenGL.GL.GL_POINTS)
+            gl.glPointSize(3)
+            gl.glDisable(gl.GL_LIGHTING)
+            gl.glBegin(gl.GL_POINTS)
         i = 1
         for lm in object.landmark_list:
             if lm.selected:
-                glColor3f(self.color.selected_landmark[0], self.color.selected_landmark[1],
+                gl.glColor3f(self.color.selected_landmark[0], self.color.selected_landmark[1],
                           self.color.selected_landmark[2])
             elif i == self.begin_wire_idx or i == self.end_wire_idx:
-                glColor3f(self.color.selected_landmark[0], self.color.selected_landmark[1],
+                gl.glColor3f(self.color.selected_landmark[0], self.color.selected_landmark[1],
                           self.color.selected_landmark[2])
             elif i == self.begin_baseline_idx or i == self.end_baseline_idx:
-                glColor3f(self.color.meanshape_wireframe[0], self.color.meanshape_wireframe[1],
+                gl.glColor3f(self.color.meanshape_wireframe[0], self.color.meanshape_wireframe[1],
                           self.color.meanshape_wireframe[2])
             elif i in self.parent_dlg.baseline_point_list and self.show_baseline:
-                glColor3f(0.0, 0.0, 1.0)
+                gl.glColor3f(0.0, 0.0, 1.0)
             else:
-                glColor3f(original_color[0], color[1], color[2])
+                gl.glColor3f(original_color[0], color[1], color[2])
             coords = [0,0,0]
             for j in range(len(lm.coords)):
                 coords[j] = lm.coords[j]
 
             if single_object_mode:
-                glPushMatrix()
-                glTranslate(coords[0], coords[1], coords[2])
-                #print "render mode:", self.render_mode, OpenGL.GL.GL_SELECT
-                if self.render_mode == OpenGL.GL.GL_SELECT:
-                    glLoadName(i)
+                gl.glPushMatrix()
+                gl.glTranslate(coords[0], coords[1], coords[2])
+                #print "render mode:", self.render_mode, gl.GL_SELECT
+                if self.render_mode == gl.GL_SELECT:
+                    gl.glLoadName(i)
                 i += 1
-                glutSolidSphere(size, 20, 20)  #glutSolidCube( size )
-                glPopMatrix()
+                glut.glutSolidSphere(size, 20, 20)  #glutSolidCube( size )
+                gl.glPopMatrix()
             else:
-                glVertex3f(coords[0], coords[1], coords[2])
+                gl.glVertex3f(coords[0], coords[1], coords[2])
 
         if not single_object_mode:
             #print "glend"
-            glEnd()
-            glEnable(OpenGL.GL.GL_LIGHTING)
+            gl.glEnd()
+            gl.glEnable(gl.GL_LIGHTING)
 
         if self.show_baseline:
-            glDisable(OpenGL.GL.GL_LIGHTING)
-            glColor3f(.2, .2, 1.0)
+            gl.glDisable(gl.GL_LIGHTING)
+            gl.glColor3f(.2, .2, 1.0)
             basestr = ["(0,0,0)", "(0,1,0)", "(x,y,0)"]
             i = 0
             for i in range(len(self.parent_dlg.baseline_point_list)):
@@ -753,39 +757,39 @@ class Md3DCanvas(glcanvas.GLCanvas):
                 #print "idx=",idx
                 lm = object.landmark_list[idx - 1]
                 #print basestr[i]
-                glRasterPos3f(lm.coords[0] - size * (len(basestr[i]) / 2), lm.coords[1] - size * 2.4, lm.coords[2])
+                gl.glRasterPos3f(lm.coords[0] - size * (len(basestr[i]) / 2), lm.coords[1] - size * 2.4, lm.coords[2])
                 for letter in list(basestr[i]):
-                    glutBitmapCharacter(OpenGL.GLUT.GLUT_BITMAP_HELVETICA_12, ctypes.c_int(ord(letter)))
-            glEnable(OpenGL.GL.GL_LIGHTING)
+                    gl.glutBitmapCharacter(glut.GLUT_BITMAP_HELVETICA_12, int(ord(letter)))
+            gl.glEnable(gl.GL_LIGHTING)
 
         if show_index:
             i = 0
-            glDisable(OpenGL.GL.GL_LIGHTING)
-            glColor3f(.5, .5, 1.0)
+            gl.glDisable(gl.GL_LIGHTING)
+            gl.glColor3f(.5, .5, 1.0)
             for lm in object.landmark_list:
                 i += 1
-                glRasterPos3f(lm.coords[0], lm.coords[1] + size * 1.2, lm.coords[2])
+                gl.glRasterPos3f(lm.coords[0], lm.coords[1] + size * 1.2, lm.coords[2])
                 for letter in list(str(i)):
                     #print ord(letter)
-                    #print OpenGL.GLUT.GLUT_BITMAP_HELVETICA_12, type(OpenGL.GLUT.GLUT_BITMAP_HELVETICA_12).__name__
+                    #print glut.GLUT_BITMAP_HELVETICA_12, type(glut.GLUT_BITMAP_HELVETICA_12).__name__
                     #print int(ord(letter)), type(int(ord(letter))).__name__
-                    glutBitmapCharacter(OpenGL.GLUT.GLUT_BITMAP_HELVETICA_12, ord(letter))
+                    glut.glutBitmapCharacter(glut.GLUT_BITMAP_HELVETICA_12, ord(letter))
                     #c = 7
                     #glutBitmapCharacter(ctypes.c_int(c), ctypes.c_int(ord(letter)))
-            glEnable(OpenGL.GL.GL_LIGHTING)
-        glPopMatrix()
+            gl.glEnable(gl.GL_LIGHTING)
+        gl.glPopMatrix()
 
     def InitGL(self):
         #if self.print_log:
         #print "InitGL"
         if self.GetContext():
             self.SetCurrent()
-            glViewport(0, 0, self.GetSize().width, self.GetSize().height)
+            gl.glViewport(0, 0, self.GetSize().width, self.GetSize().height)
         #glMatrixMode(GL_PROJECTION)
         #glFrustum(-1.5, 1.5, -1.5, 1.5, 1, 100.0)
         #print "width height near far offset", width, height, znear, zfar, self.offset
-        glEnable(OpenGL.GL.GL_LIGHTING)
-        glEnable(OpenGL.GL.GL_LIGHT0)
+        gl.glEnable(gl.GL_LIGHTING)
+        gl.glEnable(gl.GL_LIGHT0)
         #glLightfv( GL_LIGHT0, GL_AMBIENT, ( 0.5, 0.5, 0.5, 1.0 ) )
         #glLightfv( GL_LIGHT0, GL_AMBIENT, ( 1.0, 1.0, 1.0, 1.0 ) )
         #glLightfv( GL_LIGHT0, GL_POSITION, ( 0.0, 0.0, 0.0 ) )
@@ -809,18 +813,18 @@ class Md3DCanvas(glcanvas.GLCanvas):
         glLightfv( GL_LIGHT3, GL_SPOT_DIRECTION, ( 0.0, 0.0, -2.0 ) )
         """
 
-        glEnable(OpenGL.GL.GL_COLOR_MATERIAL)
+        gl.glEnable(gl.GL_COLOR_MATERIAL)
 
         """ anti-aliasing """
-        glEnable(OpenGL.GL.GL_LINE_SMOOTH)
-        glEnable(OpenGL.GL.GL_POINT_SMOOTH)
-        glBlendFunc(OpenGL.GL.GL_SRC_ALPHA, OpenGL.GL.GL_ONE_MINUS_SRC_ALPHA)
-        glHint(OpenGL.GL.GL_LINE_SMOOTH_HINT, OpenGL.GL.GL_DONT_CARE)
+        gl.glEnable(gl.GL_LINE_SMOOTH)
+        gl.glEnable(gl.GL_POINT_SMOOTH)
+        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+        gl.glHint(gl.GL_LINE_SMOOTH_HINT, gl.GL_DONT_CARE)
 
-        glClearColor(0.2, 0.2, 0.2, 1.0)  # set background color
-        glDepthFunc(OpenGL.GL.GL_LESS)
-        glEnable(OpenGL.GL.GL_DEPTH_TEST)
-        glClear(OpenGL.GL.GL_COLOR_BUFFER_BIT | OpenGL.GL.GL_DEPTH_BUFFER_BIT)
+        gl.glClearColor(0.2, 0.2, 0.2, 1.0)  # set background color
+        gl.glDepthFunc(gl.GL_LESS)
+        gl.glEnable(gl.GL_DEPTH_TEST)
+        gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
 
         #glMatrixMode(GL_MODELVIEW)
         #glLoadIdentity()
@@ -829,7 +833,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
         #gluLookAt( 0.0, 0.0, self.offset * -1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0 )
         #glTranslatef(0.0, 0.0, self.offset)
         #print "offset:", self.offset
-        glutInit(sys.argv)
+        glut.glutInit(sys.argv)
 
         #self.offset = -3 # z position
 
@@ -864,26 +868,26 @@ class Md3DCanvas(glcanvas.GLCanvas):
 
         single_object_mode = True
 
-        glClear(OpenGL.GL.GL_COLOR_BUFFER_BIT | OpenGL.GL.GL_DEPTH_BUFFER_BIT)
-        glMatrixMode(OpenGL.GL.GL_MODELVIEW)
+        gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
+        gl.glMatrixMode(gl.GL_MODELVIEW)
         #glLoadIdentity()
-        glPushMatrix()
+        gl.glPushMatrix()
 
-        if self.render_mode == OpenGL.GL.GL_SELECT:
-            glInitNames()
-            glPushName(0)
+        if self.render_mode == gl.GL_SELECT:
+            gl.glInitNames()
+            gl.glPushName(0)
 
         panning = 4.0
         panning_rate_x = panning * ( self.panx - self.lastpanx + self.lastpanposx ) / ( 1.0 * self.size.width )
         panning_rate_y = panning * ( self.lastpany - self.pany + self.lastpanposy ) / ( 1.0 * self.size.height )
         #print self.panx, self.lastpanx, panning_rate_x, self.size.width
         #print self.pany, self.lastpany, panning_rate_y, self.size.height
-        glTranslate(self.frustum_args['width'] * ( panning_rate_x ), self.frustum_args['height'] * panning_rate_y, 0)
+        gl.glTranslate(self.frustum_args['width'] * ( panning_rate_x ), self.frustum_args['height'] * panning_rate_y, 0)
 
         yangle = self.y - self.lasty + self.last_yangle
         xangle = (self.x - self.lastx ) + self.last_xangle
-        glRotatef(yangle, 1.0, 0.0, 0.0)
-        glRotatef(xangle, 0.0, 1.0, 0.0)
+        gl.glRotatef(yangle, 1.0, 0.0, 0.0)
+        gl.glRotatef(xangle, 0.0, 1.0, 0.0)
         #print self.Size.width
 
         #print "1"
@@ -927,15 +931,15 @@ class Md3DCanvas(glcanvas.GLCanvas):
             self.wirename = dict()
             for vertices in edge_list:
                 if self.dataset == None:
-                    glColor3f(self.color.object_wireframe[0], self.color.object_wireframe[1],
+                    gl.glColor3f(self.color.object_wireframe[0], self.color.object_wireframe[1],
                               self.color.object_wireframe[2])
                 else:
-                    glColor3f(self.color.meanshape_wireframe[0], self.color.meanshape_wireframe[1],
+                    gl.glColor3f(self.color.meanshape_wireframe[0], self.color.meanshape_wireframe[1],
                               self.color.meanshape_wireframe[2])
                 if nameidx == self.wireidx_to_delete:
-                    glColor3f(self.color.selected_wire[0], self.color.selected_wire[1], self.color.selected_wire[2])
+                    gl.glColor3f(self.color.selected_wire[0], self.color.selected_wire[1], self.color.selected_wire[2])
                 if nameidx == self.hovering_edge_idx:
-                    glColor3f(self.color.selected_wire[0], self.color.selected_wire[1], self.color.selected_wire[2])
+                    gl.glColor3f(self.color.selected_wire[0], self.color.selected_wire[1], self.color.selected_wire[2])
                 #print vertices
                 vfrom = int(vertices[0])
                 vto = int(vertices[1])
@@ -950,7 +954,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
         #print "3"
         landmark_list = self.parent_dlg.landmark_list
         if self.show_baseline:
-            glColor3f(self.color.meanshape_wireframe[0], self.color.meanshape_wireframe[1],
+            gl.glColor3f(self.color.meanshape_wireframe[0], self.color.meanshape_wireframe[1],
                       self.color.meanshape_wireframe[2])
             parent = self.parent_dlg
             line = []
@@ -965,7 +969,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
                         self.DrawWire(yangle, xangle, line[i], line[i + 1], nameidx)
                         nameidx += 1
         #print "4"
-        glPopMatrix()
+        gl.glPopMatrix()
         self.SwapBuffers()
         #end_time = clock()
         #t = end_time- begin_time
