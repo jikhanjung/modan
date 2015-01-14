@@ -7,6 +7,7 @@ from gui.main_frame import ModanFrame
 from libpy.modan_version import MODAN_VERSION
 from libpy.dbi import ModanDBI
 from libpy.conf import ModanConf
+import sys
 
 class ModanGUI(wx.App):
     def OnInit(self):
@@ -19,8 +20,8 @@ class ModanGUI(wx.App):
 
         #self.dbpath = self.homepath
         
-        #sys.stdout = open(os.path.join(self.homepath,"modan_stdout.log"), "w", 0)
-        #sys.stderr = open(os.path.join(self.homepath,"modan_stderr.log"), "w")
+        sys.stdout = open(os.path.join(self.homepath,"modan_stdout.log"), "w", 0)
+        sys.stderr = open(os.path.join(self.homepath,"modan_stderr.log"), "w")
 
         self.session = None
         self.CheckDB()

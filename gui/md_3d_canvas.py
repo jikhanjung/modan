@@ -295,15 +295,18 @@ class Md3DCanvas(glcanvas.GLCanvas):
         self.SetFocus()
 
     def OnMotion(self, event):
+        #print "on motion", self.mode
         #print self.mode, CONST['ID_WIREFRAME_MODE']
         #if self.auto_rotate:
             #return
         x, y = event.GetPosition()
         if self.is_dragging:  #event.Dragging() and event.LeftIsDown():
+            #print "dragging"
             self.x, self.y = x, y
             self.Refresh(False)
             return
         elif self.is_panning:
+            #print "panning"
             self.panx, self.pany = x, y
             self.Refresh(False)
             return
@@ -365,7 +368,8 @@ class Md3DCanvas(glcanvas.GLCanvas):
                     #to_lm = self.GetParent().GetParent().landmark_list[lm_idx]
                     #self.baseline_to_x, self.baseline_to_y = self.ImageXYtoScreenXY(to_lm[1],to_lm[2])
                     self.end_baseline_idx = lm_idx
-        self.Refresh(False)
+        #print "k. end on motion"
+        #self.Refresh(False)
 
     def OnLeftDown(self, event):
         #print self.mode, CONST['ID_BASELINE_MODE'], CONST['ID_BASELINE_EDIT_MODE']
@@ -984,7 +988,11 @@ class Md3DCanvas(glcanvas.GLCanvas):
             #self.SetSize( self.GetClientSize() )
             #self.GetParent().SetSize( self.GetParent().GetClientSize() )
             self.init_control = True
-        if self.auto_rotate == False or self.is_dragging:
+        if self.auto_rotate == False:
+            #print "no rotate"
+            return
+        if self.is_dragging:
+            #print "dragging"
             return
             #return
         #print "rotate it!"
