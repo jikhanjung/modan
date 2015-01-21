@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy
-from statlib import stats
+#from statlib import stats
 from numpy import newaxis as nA
 
 from libpy.model_mdobject import MdObject

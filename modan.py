@@ -31,8 +31,8 @@ class ModanGUI(wx.App):
         return True
 
     def InitPath(self):
-        windows = True
-        if windows:
+        #windows = True
+        if os.name=='nt':
             from win32com.shell import shell, shellcon
             #print shell.SHGetFolderPath(0, shellcon.CSIDL_PERSONAL, None, 0)
             self.homepath = shell.SHGetFolderPath(0, shellcon.CSIDL_PERSONAL, None, 0)
