@@ -45,6 +45,8 @@ CONTROL_ID['ID_CHK_AUTO_ROTATE'] = 2031
 CONTROL_ID['ID_CHK_SHOW_INDEX'] = 2032
 CONTROL_ID['ID_CHK_SHOW_WIREFRAME'] = 2033
 CONTROL_ID['ID_CHK_SHOW_BASELINE'] = 2034
+CONTROL_ID['ID_TEST_BUTTON1'] = 2041
+CONTROL_ID['ID_TEST_BUTTON2'] = 2042
 
 
 LM_MISSING_VALUE = -99999
@@ -291,10 +293,14 @@ class ModanObjectDialog(wx.Dialog):
         self.forms['landmark_list'].Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnLandmarkSelected, id=CONTROL_ID['ID_LM_GRID_CTRL'])
 
         ## Buttons
+        self.testButton1 = wx.Button(panel, CONTROL_ID['ID_TEST_BUTTON1'], 'Test1')
+        self.testButton2 = wx.Button(panel, CONTROL_ID['ID_TEST_BUTTON2'], 'Test2')
         self.saveButton = wx.Button(panel, CONTROL_ID['ID_SAVE_BUTTON'], 'Save')
         #self.showButton = wx.Button(panel, ID_SHOW_BUTTON, 'Show')
         self.deleteButton = wx.Button(panel, CONTROL_ID['ID_DELETE_BUTTON'], 'Delete')
         self.closeButton = wx.Button(panel, CONTROL_ID['ID_CLOSE_BUTTON'], 'Close')
+        self.Bind(wx.EVT_BUTTON, self.OnTest1, id=CONTROL_ID['ID_TEST_BUTTON1'])
+        self.Bind(wx.EVT_BUTTON, self.OnTest2, id=CONTROL_ID['ID_TEST_BUTTON2'])
         self.Bind(wx.EVT_BUTTON, self.OnSave, id=CONTROL_ID['ID_SAVE_BUTTON'])
         self.Bind(wx.EVT_BUTTON, self.OnDelete, id=CONTROL_ID['ID_DELETE_BUTTON'])
         self.Bind(wx.EVT_BUTTON, self.OnClose, id=CONTROL_ID['ID_CLOSE_BUTTON'])
@@ -308,6 +314,13 @@ class ModanObjectDialog(wx.Dialog):
         #self.Show()
         self.forms['objname'].SetFocus()
         #print "end init"
+
+    def OnTest1(self,event):
+        self.ThreeDViewer.SwapBuffers()
+
+
+    def OnTest2(self,event):
+        self.ThreeDViewer.OnDraw()
 
     def OnSlide(self, event):
         bright = self.slBright.GetValue()
@@ -492,7 +505,7 @@ class ModanObjectDialog(wx.Dialog):
         y += rowHeight
         buttonWidth = 100
         x = self.GetSize().width / 2 - 2 * buttonWidth
-        buttons2 = ( self.saveButton, self.deleteButton, self.closeButton )
+        buttons2 = ( self.testButton1, self.testButton2, self.saveButton, self.deleteButton, self.closeButton )
         for i in range(len(buttons2)):
             buttons2[i].SetPosition(( x, y ))
             #print x, y

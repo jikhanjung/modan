@@ -20,8 +20,8 @@ class ModanGUI(wx.App):
 
         #self.dbpath = self.homepath
         
-        sys.stdout = open(os.path.join(self.homepath,"modan_stdout.log"), "w", 0)
-        sys.stderr = open(os.path.join(self.homepath,"modan_stderr.log"), "w")
+        #sys.stdout = open(os.path.join(self.homepath,"modan_stdout.log"), "w", 0)
+        #sys.stderr = open(os.path.join(self.homepath,"modan_stderr.log"), "w")
 
         self.session = None
         self.CheckDB()
