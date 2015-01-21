@@ -1,0 +1,14 @@
+db_name: modan.moa
+author_name: Jikhan Jung
+apps:
+  ## Linux
+  ##pdf: /usr/bin/acroread
+  ##html: /usr/bin/firefox
+
+  ## Mac OSX
+  ##pdf: open -a Preview
+  ##html: open -a Firefox
+  
+  ## Microsoft Windows
+  ##pdf: start
+  ##html: explorer

@@ -1,5 +1,8 @@
 # -*- mode: python -*-
 
+# \python27\Scripts\pyinstaller.exe modan.spec --nowindowed --icon='C:\Users\jikhanjung\git\modan\icon\modan.ico'
+# \python27\Scripts\pyinstaller.exe modan.py --windowed --icon="\Users\jikhanjung\git\modan\icon\modan.ico"
+
 block_cipher = None
 
 icontree = Tree('./icon', prefix='icon')
@@ -22,7 +25,8 @@ exe = EXE(pyz,
           debug=False,
           strip=None,
           upx=True,
-          console=False , icon='\\Users\\jikhanjung\\git\\modan\\icon\\modan.ico')
+          console=False,
+          icon='C:\\Users\\jikhanjung\\git\\modan\\icon\\modan.ico')
 coll = COLLECT(exe,
                a.binaries,
                icontree,

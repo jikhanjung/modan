@@ -6,6 +6,7 @@ icontree = Tree('./icon', prefix='icon')
 configtree = Tree('./config', prefix='config')
 freeglut = [('freeglut.dll','C:\\Users\\jikhanjung\\git\\modan\\freeglut.dll','BINARY')]
 
+
 a = Analysis(['modan.py'],
              pathex=['C:\\Users\\jikhanjung\\git\\modan'],
              hiddenimports=[],
