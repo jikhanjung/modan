@@ -605,6 +605,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
         #    self.ProcessSize()
         #if self.print_log:
         print "OnSize"
+        print xz
         print "self init:", self.init
 
         if not self.init:
@@ -1069,7 +1070,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
 
     def SetSingleObject(self, mo):
         #if self.print_log:
-        #print "SetSingleObject", "with", len(mo.landmark_list), "landmarks"
+        print "SetSingleObject", "with", len(mo.landmark_list), "landmarks"
         #mo.move_to_center()
         #wx.MessageBox( "before adjust perspective" )
         #sleep_time = 2
