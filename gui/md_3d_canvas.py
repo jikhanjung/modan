@@ -111,7 +111,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
         self.interval = 50
         self.zoom = 1.0
         self.Bind(wx.EVT_ERASE_BACKGROUND, self.OnEraseBackground)
-        self.Bind(wx.EVT_SIZE, self.OnSize)
+        #self.Bind(wx.EVT_SIZE, self.OnSize)
         self.Bind(wx.EVT_PAINT, self.OnPaint)
         self.Bind(wx.EVT_LEFT_DOWN, self.OnLeftDown)
         self.Bind(wx.EVT_MIDDLE_DOWN, self.OnMiddleDown)
