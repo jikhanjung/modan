@@ -4,8 +4,8 @@
 import math
 import wx
 from wx import glcanvas
-#from OpenGL.GL import *
-#from OpenGL.GLUT import *
+# from OpenGL.GL import *
+# from OpenGL.GLUT import *
 #from OpenGL.GLU import *
 import OpenGL.GL as gl
 import OpenGL.GLU as glu
@@ -16,6 +16,7 @@ import sys
 #from OpenGL.plugins import PlatformPlugin, FormatHandler
 #from OpenGL.plugins import FormatHandler
 from ctypes import util
+
 try:
     from OpenGL.platform import win32
 except AttributeError:
@@ -135,7 +136,8 @@ class Md3DCanvas(glcanvas.GLCanvas):
         self.wirename = dict()
         self.baseline_point_to_delete = -1
         self.lastpanposx = self.lastpanposy = 0
-        #self.cursor_on_idx = -1
+
+    #self.cursor_on_idx = -1
 
     def SetMode(self, mode):
         print "set mode:", mode
@@ -160,7 +162,8 @@ class Md3DCanvas(glcanvas.GLCanvas):
         #self.OnDraw()
         #self.Refresh()
         return
-        #print "canvasbase init"
+
+    #print "canvasbase init"
 
     def SetSuperimpositionMethod(self, method_idx):
         self.superimposition_method = method_idx
@@ -181,7 +184,6 @@ class Md3DCanvas(glcanvas.GLCanvas):
         self.show_wireframe = True
         self.OnDraw()
         self.Refresh()
-        #self.refresh_window()
 
     def HideWireframe(self):
         self.show_wireframe = False
@@ -212,14 +214,15 @@ class Md3DCanvas(glcanvas.GLCanvas):
         self.interval = interval
         self.Bind(wx.EVT_TIMER, self.AutoRotate, self.rotation_timer)
         self.rotation_timer.Start(self.interval)
-        #glRenderMode( GL_RENDER )
-        #self.auto_rotate = True
-        #self.rotation_timer = wx.Timer(self)
-        #self.Bind(wx.EVT_TIMER, self.AutoRotate, self.rotation_timer)
-        #self.rotation_timer.Start(interval)
-        #self.auto_rotate = True
-        #self.SetSize( (400,400) )
-        #self.OnDraw()
+
+    #glRenderMode( GL_RENDER )
+    #self.auto_rotate = True
+    #self.rotation_timer = wx.Timer(self)
+    #self.Bind(wx.EVT_TIMER, self.AutoRotate, self.rotation_timer)
+    #self.rotation_timer.Start(interval)
+    #self.auto_rotate = True
+    #self.SetSize( (400,400) )
+    #self.OnDraw()
 
     def EndAutoRotate(self):
         #return
@@ -227,10 +230,12 @@ class Md3DCanvas(glcanvas.GLCanvas):
         self.Unbind(wx.EVT_TIMER, self.rotation_timer)
         #glRenderMode( GL_SELECT )
         self.auto_rotate = False
-        #self.auto_rotate = False
+
+    #self.auto_rotate = False
 
     def IsCursorOnLandmark(self, x, y):
-        #return
+        print 'is cursor on landmark'
+
         SIZE = 1024
         gl.glSelectBuffer(SIZE)  # allocate a selection buffer of SIZE elements
 
@@ -249,7 +254,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
         gl.glLoadIdentity()
         glu.gluPickMatrix(x, (viewport[3] - y), 10, 10, viewport)
         gl.glFrustum(self.frustum_args['width'] * -1.0, self.frustum_args['width'], self.frustum_args['height'] * -1.0,
-                  self.frustum_args['height'], self.frustum_args['znear'], self.frustum_args['zfar'])
+                     self.frustum_args['height'], self.frustum_args['znear'], self.frustum_args['zfar'])
         glu.gluLookAt(0.0, 0.0, self.offset * -1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
 
         #print "on leftdown on draw"
@@ -290,9 +295,9 @@ class Md3DCanvas(glcanvas.GLCanvas):
                 idx = names[0]
                 return hit, idx
 
-                #self.object.landmarks[lmidx].selected = True
-                #self.Refresh(False)
-                #glMatrixMode( GL_MODELVIEW )
+            #self.object.landmarks[lmidx].selected = True
+            #self.Refresh(False)
+            #glMatrixMode( GL_MODELVIEW )
 
             #    print "a"
         self.SwapBuffers()
@@ -300,14 +305,16 @@ class Md3DCanvas(glcanvas.GLCanvas):
         self.SwapBuffers()
         return hit, top_lmidx
 
+
     def OnMouseEnter(self, event):
+        print 'on mouse enter'
+
+
         self.SetFocus()
 
     def OnMotion(self, event):
-        #print "on motion", self.mode
-        #print self.mode, CONST['ID_WIREFRAME_MODE']
-        #if self.auto_rotate:
-            #return
+        print 'on motion'
+
         x, y = event.GetPosition()
         if self.is_dragging:  #event.Dragging() and event.LeftIsDown():
             #print "dragging"
@@ -335,12 +342,12 @@ class Md3DCanvas(glcanvas.GLCanvas):
                     #print "cursor on landmark"
                     self.SetMode(CONST['ID_WIREFRAME_EDIT_MODE'])
                     self.hovering_edge_idx = -1
-                    #self.begin_wire_idx = lm_idx
+                #self.begin_wire_idx = lm_idx
                 else:
                     self.hovering_edge_idx = lm_idx
-                    #from_idx, to_idx = self.wirename[lm_idx].split("_")
-                    #self.hovering_edge = [ from_idx, to_idx ]
-                    #self.parent_dlg.DeleteWire(from_idx, to_idx)
+                #from_idx, to_idx = self.wirename[lm_idx].split("_")
+                #self.hovering_edge = [ from_idx, to_idx ]
+                #self.parent_dlg.DeleteWire(from_idx, to_idx)
             else:
                 self.hovering_edge_idx = -1
 
@@ -355,7 +362,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
                 else:
                     self.SetMode(CONST['ID_WIREFRAME_MODE'])
                     self.begin_wire_idx = -1
-                    # draw dangling wire
+                # draw dangling wire
             else:
                 if self.is_dragging_wire:
                     if self.begin_wire_idx != lm_idx:
@@ -366,7 +373,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
             hit, lm_idx = self.IsCursorOnLandmark(x, y)
             if hit and lm_idx < 1000:
                 self.SetMode(CONST['ID_BASELINE_EDIT_MODE'])
-                #self.begin_baseline_idx = lm_idx
+            #self.begin_baseline_idx = lm_idx
         elif self.mode == CONST['ID_BASELINE_EDIT_MODE']:
             hit, lm_idx = self.IsCursorOnLandmark(x, y)
             #print hit, lm_idx, self.begin_wire_idx, self.end_wire_idx
@@ -378,7 +385,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
                 else:
                     self.SetMode(CONST['ID_BASELINE_MODE'])
                     self.begin_baseline_idx = -1
-                    # draw dangling wire
+                # draw dangling wire
             else:
                 if self.begin_baseline_idx != lm_idx:
                     #to_lm = self.GetParent().GetParent().landmark_list[lm_idx]
@@ -391,8 +398,9 @@ class Md3DCanvas(glcanvas.GLCanvas):
         #self.OnDraw()
         self.Refresh()
 
+
     def OnLeftDown(self, event):
-        #print "on left down"
+        print "on left down"
         #print self.mode, CONST['ID_BASELINE_MODE'], CONST['ID_BASELINE_EDIT_MODE']
         if self.mode == CONST['ID_WIREFRAME_EDIT_MODE']:
             self.is_dragging_wire = True
@@ -402,10 +410,10 @@ class Md3DCanvas(glcanvas.GLCanvas):
             #print "cursor on landmark", x, y, hit, lm_idx
             if hit and lm_idx < 1000:
                 self.begin_wire_idx = lm_idx
-                #print hit, lm_idx
-                #print "cursor on landmark"
-                #self.SetMode(CONST['ID_WIREFRAME_EDIT_MODE'])
-                #print "left down. edit wireframe!", self.begin_wire_idx
+            #print hit, lm_idx
+            #print "cursor on landmark"
+            #self.SetMode(CONST['ID_WIREFRAME_EDIT_MODE'])
+            #print "left down. edit wireframe!", self.begin_wire_idx
             #
         elif self.mode == CONST['ID_BASELINE_EDIT_MODE']:
             self.is_dragging_baseline = True
@@ -415,10 +423,10 @@ class Md3DCanvas(glcanvas.GLCanvas):
             #print "cursor on landmark", x, y, hit, lm_idx
             if hit and lm_idx < 1000:
                 self.begin_baseline_idx = lm_idx
-                #print hit, lm_idx
-                #print "cursor on landmark"
-                #self.SetMode(CONST['ID_WIREFRAME_EDIT_MODE'])
-                #print "left down. edit baseline!", self.begin_baseline_idx
+            #print hit, lm_idx
+            #print "cursor on landmark"
+            #self.SetMode(CONST['ID_WIREFRAME_EDIT_MODE'])
+            #print "left down. edit baseline!", self.begin_baseline_idx
             #
 
         else:
@@ -428,8 +436,9 @@ class Md3DCanvas(glcanvas.GLCanvas):
             self.x, self.y = self.lastx, self.lasty = event.GetPosition()
         self.refresh_window()
 
+
     def OnLeftUp(self, event):
-        #print "on left down"
+        print "on left up"
         #print "up"
         if self.mode == CONST['ID_WIREFRAME_EDIT_MODE']:
             if self.begin_wire_idx != self.end_wire_idx and self.begin_wire_idx > 0 and self.end_wire_idx > 0:
@@ -460,8 +469,9 @@ class Md3DCanvas(glcanvas.GLCanvas):
         self.OnDraw()
         self.refresh_window()
 
+
     def OnRightDown(self, event):
-        #print "right down"
+        print "right down"
         if self.mode == CONST['ID_WIREFRAME_MODE']:
             #print "wireframe_mode right down"
             x, y = event.GetPosition()
@@ -469,7 +479,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
             if hit and idx > 1000:
                 self.wireidx_to_delete = idx
                 self.hovering_edge_idx = -1
-                #print self.wirename[lm_idx]
+            #print self.wirename[lm_idx]
         elif self.mode == CONST['ID_BASELINE_EDIT_MODE']:
             x, y = event.GetPosition()
             hit, idx = self.IsCursorOnLandmark(x, y)
@@ -483,8 +493,9 @@ class Md3DCanvas(glcanvas.GLCanvas):
         self.refresh_window()
         return
 
+
     def OnRightUp(self, event):
-        #print "right up"
+        print "right up"
         if self.is_panning and self.mode != CONST['ID_BASELINE_EDIT_MODE']:
             self.is_panning = False
             x, y = event.GetPosition()
@@ -511,17 +522,16 @@ class Md3DCanvas(glcanvas.GLCanvas):
                 if self.baseline_point_to_delete == idx:
                     self.parent_dlg.DeleteBaselinePoint(idx)
 
-                    #print parent.wire
-                    #print "wireframe_mode right up"
+                #print parent.wire
+                #print "wireframe_mode right up"
         #if self.mode == WIREFRAME_EDIT_
         self.wireidx_to_delete = -1
         self.Refresh()
         return
 
+
     def OnMiddleDown(self, event):
-        #if self.print_log:
-        #print "OnLeftDown", self.mode
-        #print self.mode
+        #if self.print_log:        #print self.mode
         if self.mode == CONST['ID_WIREFRAME_EDIT_MODE']:
             self.is_dragging_wire = True
             self.CaptureMouse()
@@ -533,8 +543,8 @@ class Md3DCanvas(glcanvas.GLCanvas):
                 self.begin_baseline_idx = idx
                 self.CaptureMouse()
 
-    def OnMiddleUp(self, event):
 
+    def OnMiddleUp(self, event):
         if self.is_dragging_wire:
             x, y = event.GetPosition()
             hit, lm_idx = self.IsCursorOnLandmark(x, y)
@@ -563,43 +573,51 @@ class Md3DCanvas(glcanvas.GLCanvas):
                     parent.AppendBaselinePoint(self.begin_baseline_idx)
                     parent.AppendBaselinePoint(self.end_baseline_idx)
 
-                    #print "append", lm_idx, "to baseline"
-                    #parent.baseline_points = []
-                    #parent.baseline_points.append( lm_idx )
+                #print "append", lm_idx, "to baseline"
+                #parent.baseline_points = []
+                #parent.baseline_points.append( lm_idx )
             self.is_dragging_baseline = False
             #self.begin_baseline_idx = self.end_baseline_idx
             #self.end_baseline_idx = -1
             self.ReleaseMouse()
         self.refresh_window()
 
+
     def DrawToBuffer(self):
+        print "draw to buffer"
         self.refresh_window()
+
 
     def ShowBaseline(self):
         self.show_baseline = True
         self.DrawToBuffer()
-        #self.OnDraw()
 
     def HideBaseline(self):
         self.show_baseline = False
         self.DrawToBuffer()
-        #self.OnDraw()
 
     def OnEraseBackground(self, event):
-        #print "EraseBackground"
+        print "EraseBackground"
         pass  # Do nothing, to avoid flashing on MSW.
+
 
     def OnSize(self, event):
         #    self.ProcessSize()
         #if self.print_log:
-        #print "OnSize"
+        print "OnSize"
+        print "self init:", self.init
 
         if not self.init:
             self.InitGL()
             self.init = True
+        print "self init:", self.init
         s = self.GetClientSize()
         size = self.size = s
-        if self.GetContext():
+        gc = self.GetContext()
+        print "getcontext return:", gc
+
+        if gc:
+            print "getcontext success"
             self.SetCurrent()
             gl.glViewport(0, 0, size.width, size.height)
 
@@ -646,6 +664,8 @@ class Md3DCanvas(glcanvas.GLCanvas):
             #print "width height near far offset", width, height, znear, zfar, self.offset
             #print self.r
             gl.glMatrixMode(gl.GL_MODELVIEW)  # switch back to model view
+        else:
+            print "getcontext fail"
 
         event.Skip()
 
@@ -698,6 +718,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
         glu.gluCylinder(cyl, radius, radius, length, 10, 10)
         gl.glPopMatrix()
 
+
     def SelectLandmark(self, idx_list):
         for i in range(len(self.mdobject.landmark_list)):
             if i in idx_list:
@@ -707,20 +728,23 @@ class Md3DCanvas(glcanvas.GLCanvas):
         #print "selected idx :", idx_list
         self.refresh_window()
 
+
     def SelectObject(self, idx_list):
         for i in range(len(self.dataset.object_list)):
             if i in idx_list:
                 self.dataset.object_list[i].selected = True
             else:
                 self.dataset.object_list[i].selected = False
-                #print self.dataset.object_list[i].selected
+            #print self.dataset.object_list[i].selected
         self.refresh_window()
+
 
     def ToggleObjectVisibility(self, idx):
         if self.dataset.object_list[idx].visible:
             self.dataset.object_list[idx].visible = False
         else:
             self.dataset.object_list[idx].visible = True
+
 
     def DrawObject(self, object, xangle, yangle, size=0.1, color=( 1.0, 1.0, 0.0 ), show_index=False,
                    single_object_mode=True):
@@ -744,18 +768,18 @@ class Md3DCanvas(glcanvas.GLCanvas):
         for lm in object.landmark_list:
             if lm.selected:
                 gl.glColor3f(self.color.selected_landmark[0], self.color.selected_landmark[1],
-                          self.color.selected_landmark[2])
+                             self.color.selected_landmark[2])
             elif i == self.begin_wire_idx or i == self.end_wire_idx:
                 gl.glColor3f(self.color.selected_landmark[0], self.color.selected_landmark[1],
-                          self.color.selected_landmark[2])
+                             self.color.selected_landmark[2])
             elif i == self.begin_baseline_idx or i == self.end_baseline_idx:
                 gl.glColor3f(self.color.meanshape_wireframe[0], self.color.meanshape_wireframe[1],
-                          self.color.meanshape_wireframe[2])
+                             self.color.meanshape_wireframe[2])
             elif i in self.parent_dlg.baseline_point_list and self.show_baseline:
                 gl.glColor3f(0.0, 0.0, 1.0)
             else:
                 gl.glColor3f(original_color[0], color[1], color[2])
-            coords = [0,0,0]
+            coords = [0, 0, 0]
             for j in range(len(lm.coords)):
                 coords[j] = lm.coords[j]
 
@@ -804,10 +828,11 @@ class Md3DCanvas(glcanvas.GLCanvas):
                     #print glut.GLUT_BITMAP_HELVETICA_12, type(glut.GLUT_BITMAP_HELVETICA_12).__name__
                     #print int(ord(letter)), type(int(ord(letter))).__name__
                     glut.glutBitmapCharacter(glut.GLUT_BITMAP_HELVETICA_12, ord(letter))
-                    #c = 7
-                    #glutBitmapCharacter(ctypes.c_int(c), ctypes.c_int(ord(letter)))
+                #c = 7
+                #glutBitmapCharacter(ctypes.c_int(c), ctypes.c_int(ord(letter)))
             gl.glEnable(gl.GL_LIGHTING)
         gl.glPopMatrix()
+
 
     def InitGL(self):
         #if self.print_log:
@@ -865,7 +890,9 @@ class Md3DCanvas(glcanvas.GLCanvas):
         #print "offset:", self.offset
         glut.glutInit(sys.argv)
 
-        #self.offset = -3 # z position
+
+    #self.offset = -3 # z position
+
 
     def AdjustObjectRotation(self):
         y_angle = self.last_yangle
@@ -882,6 +909,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
         if self.dataset != None:
             for mo in self.dataset.object_list:
                 mo.rotate_3d(y_angle, 'X')
+
 
     def OnDraw(self):
         print "on draw"
@@ -942,7 +970,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
         #dataset_end = clock()
         #print "draw single object", dataset_end
         #print "2"
-        if len(self.mdobject.landmark_list)>200:
+        if len(self.mdobject.landmark_list) > 200:
             single_object_mode = False
         """ Draw object: """
         if ( self.dataset != None and self.show_meanshape ):
@@ -964,10 +992,10 @@ class Md3DCanvas(glcanvas.GLCanvas):
             for vertices in edge_list:
                 if self.dataset == None:
                     gl.glColor3f(self.color.object_wireframe[0], self.color.object_wireframe[1],
-                              self.color.object_wireframe[2])
+                                 self.color.object_wireframe[2])
                 else:
                     gl.glColor3f(self.color.meanshape_wireframe[0], self.color.meanshape_wireframe[1],
-                              self.color.meanshape_wireframe[2])
+                                 self.color.meanshape_wireframe[2])
                 if nameidx == self.wireidx_to_delete:
                     gl.glColor3f(self.color.selected_wire[0], self.color.selected_wire[1], self.color.selected_wire[2])
                 if nameidx == self.hovering_edge_idx:
@@ -978,8 +1006,8 @@ class Md3DCanvas(glcanvas.GLCanvas):
                 if vfrom > len(self.mdobject.landmark_list) or vto > len(self.mdobject.landmark_list):
                     #print "out of bound"
                     continue
-                    #if self.print_log:
-                    #print "draw wire"
+                #if self.print_log:
+                #print "draw wire"
                 self.wirename[nameidx] = str(vfrom) + "_" + str(vto)
                 self.DrawWire(yangle, xangle, vfrom, vto, nameidx)
                 nameidx += 1
@@ -987,7 +1015,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
         landmark_list = self.parent_dlg.landmark_list
         if self.show_baseline:
             gl.glColor3f(self.color.meanshape_wireframe[0], self.color.meanshape_wireframe[1],
-                      self.color.meanshape_wireframe[2])
+                         self.color.meanshape_wireframe[2])
             parent = self.parent_dlg
             line = []
             line[:] = parent.baseline_point_list[:]
@@ -1004,14 +1032,18 @@ class Md3DCanvas(glcanvas.GLCanvas):
         gl.glPopMatrix()
         print "swap buffers"
         self.SwapBuffers()
-        #end_time = clock()
-        #t = end_time- begin_time
-        #d = dataset_end - dataset_begin
-        #print "draw:", t, d, int((d/t) *10000 )/100.0
+
+
+    #end_time = clock()
+    #t = end_time- begin_time
+    #d = dataset_end - dataset_begin
+    #print "draw:", t, d, int((d/t) *10000 )/100.0
+
 
     def do_rorate(self):
         self.last_xangle += 1
         self.OnDraw()
+
 
     def AutoRotate(self, event):
         #print "auto rotate", self.is_dragging, self.auto_rotate
@@ -1027,10 +1059,13 @@ class Md3DCanvas(glcanvas.GLCanvas):
         if self.is_dragging:
             #print "dragging"
             return
-            #return
+        #return
         self.do_rorate()
-        #print "rotate it!"
-        #self.SwapBuffers()
+
+
+    #print "rotate it!"
+    #self.SwapBuffers()
+
 
     def SetSingleObject(self, mo):
         #if self.print_log:
@@ -1043,8 +1078,8 @@ class Md3DCanvas(glcanvas.GLCanvas):
         self.mdobject = mo
         if len(mo.landmark_list) > 0:
             self.AdjustPerspective(self.mdobject)
-            #print "2"
-            #sleep( sleep_time )
+        #print "2"
+        #sleep( sleep_time )
         #    wx.MessageBox( "after adjust perspective" )
         #self.SetSize( self.GetClientSize() )
         for lm in mo.landmark_list:
@@ -1054,16 +1089,22 @@ class Md3DCanvas(glcanvas.GLCanvas):
         #sleep( sleep_time )
         e = wx.SizeEvent(self.GetClientSize())
         self.OnSize(e)
-        #self.SetSize( self.GetClientSize() )
-        #self.OnDraw()
-        #print "4"
-        #sleep( sleep_time )
-        #wx.MessageBox( "after on draw" )
+
+
+    #self.SetSize( self.GetClientSize() )
+    #self.OnDraw()
+    #print "4"
+    #sleep( sleep_time )
+    #wx.MessageBox( "after on draw" )
+
 
     def ResetParameters(self):
         #self.zoom = 1.0
         self.OnSize(wx.SizeEvent())
-        #self.
+
+
+    #self.
+
 
     def SetDataset(self, ds):
         self.dataset = ds
@@ -1074,7 +1115,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
 
     def AdjustPerspective(self, mo):
         #if self.print_log:
-        #print "adjust perspective"
+        print "adjust perspective"
         if not self.init:
             self.InitGL()
             self.init = True
@@ -1087,11 +1128,11 @@ class Md3DCanvas(glcanvas.GLCanvas):
                                  ( mo.landmark_list[i].coords[2] - mo.landmark_list[j].coords[2] ) ** 2)
                 max_dist = max(dist, max_dist)
         """      max_x = max( lm.xcoord, max_x )
-          max_y = max( lm.ycoord, max_y )
-          max_z = max( lm.zcoord, max_z )
-          min_x = min( lm.xcoord, min_x )
-          min_y = min( lm.ycoord, min_y )
-          min_z = min( lm.zcoord, min_z )
+            max_y = max( lm.ycoord, max_y )
+            max_z = max( lm.zcoord, max_z )
+            min_x = min( lm.xcoord, min_x )
+            min_y = min( lm.ycoord, min_y )
+            min_z = min( lm.zcoord, min_z )
         # print max_x, min_x, max_y, min_y, max_z, min_z
         xr = max( max_x**2, min_x ** 2 ) ** 0.5
         yr = max( max_y**2, min_y ** 2 ) ** 0.5
@@ -1113,6 +1154,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
         self.lm_radius = max_dist / ( 4 * min(50, len(mo.landmark_list)) )
         #print "radius:", self.lm_radius, "max_dist:", max_dist
         self.wire_radius = self.lm_radius / 2
+
 
     def refresh_window(self):
         print "refresh"
@@ -1162,9 +1204,10 @@ class OpenGLTestWin(wx.Dialog):
         mobj.move_to_center()
         #self.control.SetSingleObject( mobj )
         self.mo = mobj
-        #wx.MessageBox( "set single object done" )
-        #self.control.BeginAutoRotate(10)
-        #self.auto_rotate = True
+
+    #wx.MessageBox( "set single object done" )
+    #self.control.BeginAutoRotate(10)
+    #self.auto_rotate = True
 
     def SetDataset(self, ds):
         self.control.SetDataset(ds)
@@ -1172,7 +1215,7 @@ class OpenGLTestWin(wx.Dialog):
             for lm in mo.landmark_list:
                 lm.selected = False
 
-                #self.SetSize((400,400))
+            #self.SetSize((400,400))
 
 
 """ apply these color schemes later
