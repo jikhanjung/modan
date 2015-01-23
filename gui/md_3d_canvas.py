@@ -605,7 +605,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
         #    self.ProcessSize()
         #if self.print_log:
         print "OnSize"
-        print xz
+        #print xz
         print "self init:", self.init
 
         if not self.init:
