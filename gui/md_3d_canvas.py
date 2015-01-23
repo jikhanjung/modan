@@ -74,6 +74,7 @@ class MdColorScheme:
 
 class Md3DCanvas(glcanvas.GLCanvas):
     def __init__(self, parent):
+        print "3dcanvas init"
         glcanvas.GLCanvas.__init__(self, parent, -1)
         self.print_log = True
         self.parent_dlg = parent.GetParent()
@@ -600,11 +601,9 @@ class Md3DCanvas(glcanvas.GLCanvas):
         print "EraseBackground"
         pass  # Do nothing, to avoid flashing on MSW.
 
+    def on_size(self):
 
-    def OnSize(self, event):
-        #    self.ProcessSize()
-        #if self.print_log:
-        print "OnSize"
+        print "on_size"
         #print xz
         print "self init:", self.init
 
@@ -668,6 +667,8 @@ class Md3DCanvas(glcanvas.GLCanvas):
         else:
             print "getcontext fail"
 
+    def OnSize(self, event):
+        self.on_size()
         event.Skip()
 
 

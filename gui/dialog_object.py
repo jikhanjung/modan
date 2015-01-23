@@ -199,7 +199,9 @@ class ModanObjectDialog(wx.Dialog):
         '''
 
         # 3D viewer
+        print "threed viewer will be instatiated"
         self.ThreeDViewer = Md3DCanvas(panel)
+        print "threed viewer is now there"
         self.chkAutoRotate = wx.CheckBox(panel, CONTROL_ID['ID_CHK_AUTO_ROTATE'], "Auto Rotate")
         self.chkShowIndex = wx.CheckBox(panel, CONTROL_ID['ID_CHK_SHOW_INDEX'], "Show Index")
         self.chkShowWireframe = wx.CheckBox(panel, CONTROL_ID['ID_CHK_SHOW_WIREFRAME'], "Show Wireframe")
@@ -331,7 +333,7 @@ class ModanObjectDialog(wx.Dialog):
         #print bright, contrast
 
     def set_dimension(self, dimension):
-        #print "set dimension", dimension
+        print "set dimension", dimension
 
         if dimension == 2:
             self.SetSize(wx.Size(1024, 600))
