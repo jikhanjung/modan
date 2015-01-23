@@ -710,7 +710,7 @@ class ModanObjectDialog(wx.Dialog):
         #self.TwoDViewer.DrawToBuffer()
 
     def set_mdobject(self, mdobject):
-        #print "set mdobject", mdobject
+        print "set mdobject from dialog_object", mdobject
         #session = self.app.get_session()
         #print "session in setmodanobject:", session
         self.mdobject = mdobject
