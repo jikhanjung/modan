@@ -77,7 +77,8 @@ class Md3DCanvas(glcanvas.GLCanvas):
         print "3dcanvas init"
         glcanvas.GLCanvas.__init__(self, parent, -1)
         print "wx.VERSION:", wx.VERSION
-        self.context = None
+        self.context = glcanvas.GLContext(self)
+        #self.context = None
         if (wx.VERSION[1] >= 9) : # wxPython 2.9.*
             self.context = wx.glcanvas.GLContext(self)
         self.print_log = True
@@ -617,6 +618,7 @@ class Md3DCanvas(glcanvas.GLCanvas):
         print "self init:", self.init
         s = self.GetClientSize()
         size = self.size = s
+        print self.context
         gc = self.GetContext()
         print "getcontext return:", gc
 
