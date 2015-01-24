@@ -202,7 +202,7 @@ class ModanObjectDialog(wx.Dialog):
         print "threed viewer will be instatiated"
         self.ThreeDViewer = Md3DCanvas(panel)
         print "threed viewer is now there"
-        self.ThreeDViewer.on_size()
+        #self.ThreeDViewer.on_size()
         self.chkAutoRotate = wx.CheckBox(panel, CONTROL_ID['ID_CHK_AUTO_ROTATE'], "Auto Rotate")
         self.chkShowIndex = wx.CheckBox(panel, CONTROL_ID['ID_CHK_SHOW_INDEX'], "Show Index")
         self.chkShowWireframe = wx.CheckBox(panel, CONTROL_ID['ID_CHK_SHOW_WIREFRAME'], "Show Wireframe")
