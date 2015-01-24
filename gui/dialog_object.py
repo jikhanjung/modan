@@ -6,7 +6,7 @@ import wx.lib.buttons as buttons
 from libpy.conf import ModanConf
 from libpy.modan_dbclass import *
 from libpy.dataimporter import ModanDataImporter
-from gui.md_3d_canvas import Md3DCanvas
+from gui.md_3d_canvas import MdCanvas
 from gui.md_image_control import ModanImageControl, CONST
 from PIL import Image
 
@@ -200,7 +200,7 @@ class ModanObjectDialog(wx.Dialog):
 
         # 3D viewer
         print "threed viewer will be instatiated"
-        self.ThreeDViewer = Md3DCanvas(panel)
+        self.ThreeDViewer = MdCanvas(panel)
         print "threed viewer is now there"
         #self.ThreeDViewer.on_size()
         self.chkAutoRotate = wx.CheckBox(panel, CONTROL_ID['ID_CHK_AUTO_ROTATE'], "Auto Rotate")
