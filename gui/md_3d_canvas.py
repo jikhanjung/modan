@@ -78,14 +78,22 @@ class MdCanvasBase(glcanvas.GLCanvas):
         self.context = glcanvas.GLContext(self)
 
         # initial mouse position
-        self.lastx = self.x = 30
-        self.lasty = self.y = 30
+        self.lastx = self.x = 0
+        self.lasty = self.y = 0
+        self.last_xangle = 0
+        self.last_yangle = 0
+        self.panx = 0
+        self.pany = 0
+        self.lastpanx = 0
+        self.lastpany = 0
+        self.lastpanposx = 0
+        self.lastpanposy = 0
         self.size = None
         self.Bind(wx.EVT_ERASE_BACKGROUND, self.OnEraseBackground)
         self.Bind(wx.EVT_SIZE, self.OnSize)
         self.Bind(wx.EVT_PAINT, self.OnPaint)
-        self.Bind(wx.EVT_LEFT_DOWN, self.OnMouseDown)
-        self.Bind(wx.EVT_LEFT_UP, self.OnMouseUp)
+        self.Bind(wx.EVT_LEFT_DOWN, self.OnLeftDown)
+        self.Bind(wx.EVT_LEFT_UP, self.OnLeftUp)
         self.Bind(wx.EVT_MOTION, self.OnMouseMotion)
 
     def OnEraseBackground(self, event):
@@ -108,44 +116,153 @@ class MdCanvasBase(glcanvas.GLCanvas):
             self.init = True
         self.OnDraw()
 
-    def OnMouseDown(self, evt):
+    def OnLeftDown(self, evt):
+        print "leftdown"
+        self.CaptureMouse()
+        self.x, self.y = self.lastx, self.lasty = evt.GetPosition()
+        print self.x, self.y, self.lastx, self.lasty, self.last_xangle, self.last_yangle
+
+    def OnLeftUp(self, evt):
+        self.x, self.y = evt.GetPosition()
+        self.last_xangle += self.x - self.lastx
+        self.last_yangle += self.y - self.lasty
+        self.lastx = self.x
+        self.lasty = self.y
+        self.ReleaseMouse()
+        #print self.x, self.y, self.lastx, self.lasty, self.last_xangle, self.last_yangle
+
+    def OnRightDown(self, evt):
+        print "right down"
+        self.is_panning = True
+        self.CaptureMouse()
+        self.panx, self.pany = self.lastpanx, self.lastpany = evt.GetPosition()
+
+    def OnRightUp(self, event):
+        print "right up"
+        self.is_panning = False
+        x, y = event.GetPosition()
+        self.panx, self.pany = x, y
+        self.lastpanposx += (self.panx - self.lastpanx)
+        self.lastpanposy += (self.lastpany - self.pany)
+        self.lastpanx, self.lastpany = self.panx, self.pany = x, y
+        self.ReleaseMouse()
+
+    def OnMiddleDown(self, evt):
         self.CaptureMouse()
         self.x, self.y = self.lastx, self.lasty = evt.GetPosition()
 
-    def OnMouseUp(self, evt):
+    def OnMiddleUp(self, evt):
         self.ReleaseMouse()
 
     def OnMouseMotion(self, evt):
         if evt.Dragging() and evt.LeftIsDown():
-            self.lastx, self.lasty = self.x, self.y
+            #self.lastx, self.lasty = self.x, self.y
             self.x, self.y = evt.GetPosition()
+            self.Refresh(False)
+        #print self.x, self.y, self.lastx, self.lasty, self.last_xangle, self.last_yangle
+        if evt.Dragging() and self.is_panning:
+            self.panx, self.pany = evt.GetPosition()
             self.Refresh(False)
 
 class MdCanvas(MdCanvasBase):
     def __init__(self, parent):
         MdCanvasBase.__init__(self, parent)
         self.mdobject = None
+        self.auto_rotate = False
+        self.show_baseline = False
+        self.show_wireframe = False
+        self.show_index = False
+        self.zoom = 1.0
+
+        self.Bind(wx.EVT_MOUSEWHEEL, self.OnWheel)
+        self.Bind(wx.EVT_RIGHT_DOWN, self.OnRightDown)
+        self.Bind(wx.EVT_RIGHT_UP, self.OnRightUp)
+        self.Bind(wx.EVT_ENTER_WINDOW, self.OnMouseEnter)
+
+    def OnMouseEnter(self, event):
+        print 'on mouse enter'
+        self.SetFocus()
+
+    def OnWheel(self, event):
+        #print "onwheel"
+        rotation = event.GetWheelRotation()
+
+        #print rotation
+        self.zoom = self.zoom + self.zoom * 0.1 * rotation / ( ( rotation ** 2 ) ** 0.5 )
+        #print "zoom:", self.zoom
+        self.OnDraw()
+        self.Refresh()
 
     def InitGL(self):
         # set viewing projection
         gl.glMatrixMode(gl.GL_PROJECTION)
-        gl.glFrustum(-0.5, 0.5, -0.5, 0.5, 1.0, 3.0)
+        w, h = self.GetClientSize()
+        ratio = float(w)/float(h)
+        glu.gluPerspective( 60, ratio, 0.5, 10 )
+        #gl.glFrustum(-0.5, 0.5, -0.5, 0.5, 1.0, 6.0)
 
         # position viewer
         gl.glMatrixMode(gl.GL_MODELVIEW)
-        gl.glTranslatef(0.0, 0.0, -2.0)
+        gl.glLoadIdentity();
+        glu.gluLookAt(0,0,3,0,0,1,0,1,0);
+        #gl.glTranslatef(0.0, 0.0, -4.0)
 
         # position object
-        gl.glRotatef(self.y, 1.0, 0.0, 0.0)
-        gl.glRotatef(self.x, 0.0, 1.0, 0.0)
+        #gl.glRotatef(self.y, 1.0, 0.0, 0.0)
+        #gl.glRotatef(self.x, 0.0, 1.0, 0.0)
 
         gl.glEnable(gl.GL_DEPTH_TEST)
         gl.glEnable(gl.GL_LIGHTING)
         gl.glEnable(gl.GL_LIGHT0)
 
+
+    def OnDraw_(self):
+        print "ondraw"
+        gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
+        gl.glMatrixMode(gl.GL_MODELVIEW)
+        #glLoadIdentity()
+
+        lookat_zpos = 3.0 * self.zoom
+        glu.gluLookAt(0,0,lookat_zpos,0,0,1,0,1,0);
+        print lookat_zpos
+
+
+        gl.glPushMatrix()
+
+        if self.render_mode == gl.GL_SELECT:
+            gl.glInitNames()
+            gl.glPushName(0)
+
+        if False: #click and rotate process
+            yangle = self.y - self.lasty + self.last_yangle
+            xangle = (self.x - self.lastx ) + self.last_xangle
+            gl.glRotatef(yangle, 1.0, 0.0, 0.0)
+            gl.glRotatef(xangle, 0.0, 1.0, 0.0)
+
+
+        self.DrawObject(self.mdobject, xangle, yangle, self.lm_radius * 2, color=self.color.object,
+                        show_index=self.show_index, single_object_mode=single_object_mode)
+
     def OnDraw(self):
         # clear color and depth buffers
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
+
+        lookat_zpos = 3.0 * self.zoom
+        gl.glMatrixMode(gl.GL_MODELVIEW)
+        gl.glLoadIdentity();
+        glu.gluLookAt(0,0,lookat_zpos,0,0,1,0,1,0);
+        #print "zpos:", lookat_zpos
+
+        panning = 4.0
+        panning_rate_x = panning * ( self.panx - self.lastpanx + self.lastpanposx ) / ( 1.0 * self.size.width )
+        panning_rate_y = panning * ( self.lastpany - self.pany + self.lastpanposy ) / ( 1.0 * self.size.height )
+        gl.glTranslate(( panning_rate_x ), panning_rate_y, 0)
+
+        xangle = (self.x - self.lastx ) + self.last_xangle
+        yangle = self.y - self.lasty + self.last_yangle
+        #print "x y angle:", xangle, yangle
+        gl.glRotatef(yangle, 1.0, 0.0, 0.0)
+        gl.glRotatef(xangle, 0.0, 1.0, 0.0)
 
         # draw six faces of a cube
         gl.glBegin(gl.GL_QUADS)
@@ -186,23 +303,32 @@ class MdCanvas(MdCanvasBase):
         gl.glVertex3f(-0.5, 0.5,-0.5)
         gl.glEnd()
 
-        if self.size is None:
-            self.size = self.GetClientSize()
-        w, h = self.size
-        w = max(w, 1.0)
-        h = max(h, 1.0)
-        xScale = 180.0 / w
-        yScale = 180.0 / h
-        gl.glRotatef((self.y - self.lasty) * yScale, 1.0, 0.0, 0.0);
-        gl.glRotatef((self.x - self.lastx) * xScale, 0.0, 1.0, 0.0);
+        if False:
+            if self.size is None:
+                self.size = self.GetClientSize()
+            w, h = self.size
+            w = max(w, 1.0)
+            h = max(h, 1.0)
+            xScale = 180.0 / w
+            yScale = 180.0 / h
+            gl.glRotatef((self.y - self.lasty) * yScale, 1.0, 0.0, 0.0);
+            gl.glRotatef((self.x - self.lastx) * xScale, 0.0, 1.0, 0.0);
 
         self.SwapBuffers()
 
     def SetSingleObject(self,mo):
+        print [lm.coords for lm in mo.landmark_list]
+        max_dist = -1
+        for lm in mo.landmark_list:
+            dist_sq = 0
+            for c in lm.coords:
+                dist_sq += c ** 2
+            dist = dist_sq ** 0.5
+            max_dist = max(max_dist, dist)
+        for lm in mo.landmark_list:
+            lm.coords = [ c / max_dist for c in lm.coords ]
+        print [lm.coords for lm in mo.landmark_list]
         self.mdobject = mo
-
-    def OnWheel(self, event):
-        return
 
     def BeginAutoRotate(self):
         return
@@ -219,6 +345,10 @@ class MdCanvas(MdCanvasBase):
     def ShowIndex(self):
         return
     def HideIndex(self):
+        return
+    def ShowMeanshape(self):
+        return
+    def HideMeanshape(self):
         return
 
 
@@ -839,44 +969,6 @@ class Md3DCanvas(glcanvas.GLCanvas):
         #  self.init = True
         self.OnDraw()
 
-
-    def DrawWire(self, yangle, xangle, vfrom, vto, nameidx=-1):
-        #if self.print_log:
-        #print "DrawWire"
-        #return
-
-        lm1 = self.mdobject.landmark_list[vfrom - 1]
-        lm2 = self.mdobject.landmark_list[vto - 1]
-        axis_start = [0, 0, 1]
-        axis_end = [lm1.coords[0] - lm2.coords[0], lm1.coords[1] - lm2.coords[1], lm1.coords[2] - lm2.coords[2]]
-        angle = math.acos(axis_start[0] * axis_end[0] + axis_start[1] * axis_end[1] + axis_start[2] * axis_end[2] / (
-        (axis_start[0] ** 2 + axis_start[1] ** 2 + axis_start[2] ** 2) ** 0.5 * (
-        axis_end[0] ** 2 + axis_end[1] ** 2 + axis_end[2] ** 2) ** 0.5))
-        angle = angle * (180 / math.pi)
-        axis_rotation = [0, 0, 0]
-        axis_rotation[0] = axis_start[1] * axis_end[2] - axis_start[2] * axis_end[1]
-        axis_rotation[1] = axis_start[2] * axis_end[0] - axis_start[0] * axis_end[2]
-        axis_rotation[2] = axis_start[0] * axis_end[1] - axis_start[1] * axis_end[0]
-        if angle == 180:
-            axis_rotation = [1, 0, 0]
-
-        length = (axis_end[0] ** 2 + axis_end[1] ** 2 + axis_end[2] ** 2) ** 0.5
-        radius = self.wire_radius
-        gl.glPushMatrix()
-        #glLoadIdentity()
-        cyl = glu.gluNewQuadric()
-        #glTranslate(0, 0, self.offset)
-        #glRotatef(yangle, 1.0, 0.0, 0.0)
-        #glRotatef(xangle, 0.0, 1.0, 0.0)
-        gl.glTranslate(lm2.coords[0], lm2.coords[1], lm2.coords[2])
-        if (angle != 0):
-            gl.glRotate(angle, axis_rotation[0], axis_rotation[1], axis_rotation[2])
-        if nameidx > 0:
-            gl.glLoadName(nameidx)
-        glu.gluCylinder(cyl, radius, radius, length, 10, 10)
-        gl.glPopMatrix()
-
-
     def SelectLandmark(self, idx_list):
         for i in range(len(self.mdobject.landmark_list)):
             if i in idx_list:
@@ -902,95 +994,6 @@ class Md3DCanvas(glcanvas.GLCanvas):
             self.dataset.object_list[idx].visible = False
         else:
             self.dataset.object_list[idx].visible = True
-
-
-    def DrawObject(self, object, xangle, yangle, size=0.1, color=( 1.0, 1.0, 0.0 ), show_index=False,
-                   single_object_mode=True):
-        #single_object_mode = False
-        #if self.print_log:
-        #print "DrawObject"
-        #print "object:", object.objname
-        original_color = color
-        #i = 0
-        #glTranslate(0, 0, self.offset)
-        gl.glPushMatrix()
-
-
-        #    single_object_mode = True
-        if not single_object_mode:
-            #print "point size, glbegin"
-            gl.glPointSize(3)
-            gl.glDisable(gl.GL_LIGHTING)
-            gl.glBegin(gl.GL_POINTS)
-        i = 1
-        for lm in object.landmark_list:
-            if lm.selected:
-                gl.glColor3f(self.color.selected_landmark[0], self.color.selected_landmark[1],
-                             self.color.selected_landmark[2])
-            elif i == self.begin_wire_idx or i == self.end_wire_idx:
-                gl.glColor3f(self.color.selected_landmark[0], self.color.selected_landmark[1],
-                             self.color.selected_landmark[2])
-            elif i == self.begin_baseline_idx or i == self.end_baseline_idx:
-                gl.glColor3f(self.color.meanshape_wireframe[0], self.color.meanshape_wireframe[1],
-                             self.color.meanshape_wireframe[2])
-            elif i in self.parent_dlg.baseline_point_list and self.show_baseline:
-                gl.glColor3f(0.0, 0.0, 1.0)
-            else:
-                gl.glColor3f(original_color[0], color[1], color[2])
-            coords = [0, 0, 0]
-            for j in range(len(lm.coords)):
-                coords[j] = lm.coords[j]
-
-            if single_object_mode:
-                gl.glPushMatrix()
-                gl.glTranslate(coords[0], coords[1], coords[2])
-                #print "render mode:", self.render_mode, gl.GL_SELECT
-                if self.render_mode == gl.GL_SELECT:
-                    gl.glLoadName(i)
-                i += 1
-                glut.glutSolidSphere(size, 20, 20)  #glutSolidCube( size )
-                gl.glPopMatrix()
-            else:
-                gl.glVertex3f(coords[0], coords[1], coords[2])
-
-        if not single_object_mode:
-            #print "glend"
-            gl.glEnd()
-            gl.glEnable(gl.GL_LIGHTING)
-
-        if self.show_baseline:
-            gl.glDisable(gl.GL_LIGHTING)
-            gl.glColor3f(.2, .2, 1.0)
-            basestr = ["(0,0,0)", "(0,1,0)", "(x,y,0)"]
-            i = 0
-            for i in range(len(self.parent_dlg.baseline_point_list)):
-                #print "i=",i
-                idx = self.parent_dlg.baseline_point_list[i]
-                #print "idx=",idx
-                lm = object.landmark_list[idx - 1]
-                #print basestr[i]
-                gl.glRasterPos3f(lm.coords[0] - size * (len(basestr[i]) / 2), lm.coords[1] - size * 2.4, lm.coords[2])
-                for letter in list(basestr[i]):
-                    glut.glutBitmapCharacter(glut.GLUT_BITMAP_HELVETICA_12, int(ord(letter)))
-            gl.glEnable(gl.GL_LIGHTING)
-
-        if show_index:
-            i = 0
-            gl.glDisable(gl.GL_LIGHTING)
-            gl.glColor3f(.5, .5, 1.0)
-            for lm in object.landmark_list:
-                i += 1
-                gl.glRasterPos3f(lm.coords[0], lm.coords[1] + size * 1.2, lm.coords[2])
-                for letter in list(str(i)):
-                    #print ord(letter)
-                    #print glut.GLUT_BITMAP_HELVETICA_12, type(glut.GLUT_BITMAP_HELVETICA_12).__name__
-                    #print int(ord(letter)), type(int(ord(letter))).__name__
-                    glut.glutBitmapCharacter(glut.GLUT_BITMAP_HELVETICA_12, ord(letter))
-                #c = 7
-                #glutBitmapCharacter(ctypes.c_int(c), ctypes.c_int(ord(letter)))
-            gl.glEnable(gl.GL_LIGHTING)
-        gl.glPopMatrix()
-
 
     def InitGL(self):
         #if self.print_log:
@@ -1197,6 +1200,128 @@ class Md3DCanvas(glcanvas.GLCanvas):
     #d = dataset_end - dataset_begin
     #print "draw:", t, d, int((d/t) *10000 )/100.0
 
+    def DrawObject(self, object, xangle, yangle, size=0.1, color=( 1.0, 1.0, 0.0 ), show_index=False,
+                   single_object_mode=True):
+        #single_object_mode = False
+        #if self.print_log:
+        #print "DrawObject"
+        #print "object:", object.objname
+        original_color = color
+        #i = 0
+        #glTranslate(0, 0, self.offset)
+        gl.glPushMatrix()
+
+
+        #    single_object_mode = True
+        if not single_object_mode:
+            #print "point size, glbegin"
+            gl.glPointSize(3)
+            gl.glDisable(gl.GL_LIGHTING)
+            gl.glBegin(gl.GL_POINTS)
+        i = 1
+        for lm in object.landmark_list:
+            if lm.selected:
+                gl.glColor3f(self.color.selected_landmark[0], self.color.selected_landmark[1],
+                             self.color.selected_landmark[2])
+            elif i == self.begin_wire_idx or i == self.end_wire_idx:
+                gl.glColor3f(self.color.selected_landmark[0], self.color.selected_landmark[1],
+                             self.color.selected_landmark[2])
+            elif i == self.begin_baseline_idx or i == self.end_baseline_idx:
+                gl.glColor3f(self.color.meanshape_wireframe[0], self.color.meanshape_wireframe[1],
+                             self.color.meanshape_wireframe[2])
+            elif i in self.parent_dlg.baseline_point_list and self.show_baseline:
+                gl.glColor3f(0.0, 0.0, 1.0)
+            else:
+                gl.glColor3f(original_color[0], color[1], color[2])
+            coords = [0, 0, 0]
+            for j in range(len(lm.coords)):
+                coords[j] = lm.coords[j]
+
+            if single_object_mode:
+                gl.glPushMatrix()
+                gl.glTranslate(coords[0], coords[1], coords[2])
+                #print "render mode:", self.render_mode, gl.GL_SELECT
+                if self.render_mode == gl.GL_SELECT:
+                    gl.glLoadName(i)
+                i += 1
+                glut.glutSolidSphere(size, 20, 20)  #glutSolidCube( size )
+                gl.glPopMatrix()
+            else:
+                gl.glVertex3f(coords[0], coords[1], coords[2])
+
+        if not single_object_mode:
+            #print "glend"
+            gl.glEnd()
+            gl.glEnable(gl.GL_LIGHTING)
+
+        if self.show_baseline:
+            gl.glDisable(gl.GL_LIGHTING)
+            gl.glColor3f(.2, .2, 1.0)
+            basestr = ["(0,0,0)", "(0,1,0)", "(x,y,0)"]
+            i = 0
+            for i in range(len(self.parent_dlg.baseline_point_list)):
+                #print "i=",i
+                idx = self.parent_dlg.baseline_point_list[i]
+                #print "idx=",idx
+                lm = object.landmark_list[idx - 1]
+                #print basestr[i]
+                gl.glRasterPos3f(lm.coords[0] - size * (len(basestr[i]) / 2), lm.coords[1] - size * 2.4, lm.coords[2])
+                for letter in list(basestr[i]):
+                    glut.glutBitmapCharacter(glut.GLUT_BITMAP_HELVETICA_12, int(ord(letter)))
+            gl.glEnable(gl.GL_LIGHTING)
+
+        if show_index:
+            i = 0
+            gl.glDisable(gl.GL_LIGHTING)
+            gl.glColor3f(.5, .5, 1.0)
+            for lm in object.landmark_list:
+                i += 1
+                gl.glRasterPos3f(lm.coords[0], lm.coords[1] + size * 1.2, lm.coords[2])
+                for letter in list(str(i)):
+                    #print ord(letter)
+                    #print glut.GLUT_BITMAP_HELVETICA_12, type(glut.GLUT_BITMAP_HELVETICA_12).__name__
+                    #print int(ord(letter)), type(int(ord(letter))).__name__
+                    glut.glutBitmapCharacter(glut.GLUT_BITMAP_HELVETICA_12, ord(letter))
+                #c = 7
+                #glutBitmapCharacter(ctypes.c_int(c), ctypes.c_int(ord(letter)))
+            gl.glEnable(gl.GL_LIGHTING)
+        gl.glPopMatrix()
+
+    def DrawWire(self, yangle, xangle, vfrom, vto, nameidx=-1):
+        #if self.print_log:
+        #print "DrawWire"
+        #return
+
+        lm1 = self.mdobject.landmark_list[vfrom - 1]
+        lm2 = self.mdobject.landmark_list[vto - 1]
+        axis_start = [0, 0, 1]
+        axis_end = [lm1.coords[0] - lm2.coords[0], lm1.coords[1] - lm2.coords[1], lm1.coords[2] - lm2.coords[2]]
+        angle = math.acos(axis_start[0] * axis_end[0] + axis_start[1] * axis_end[1] + axis_start[2] * axis_end[2] / (
+        (axis_start[0] ** 2 + axis_start[1] ** 2 + axis_start[2] ** 2) ** 0.5 * (
+        axis_end[0] ** 2 + axis_end[1] ** 2 + axis_end[2] ** 2) ** 0.5))
+        angle = angle * (180 / math.pi)
+        axis_rotation = [0, 0, 0]
+        axis_rotation[0] = axis_start[1] * axis_end[2] - axis_start[2] * axis_end[1]
+        axis_rotation[1] = axis_start[2] * axis_end[0] - axis_start[0] * axis_end[2]
+        axis_rotation[2] = axis_start[0] * axis_end[1] - axis_start[1] * axis_end[0]
+        if angle == 180:
+            axis_rotation = [1, 0, 0]
+
+        length = (axis_end[0] ** 2 + axis_end[1] ** 2 + axis_end[2] ** 2) ** 0.5
+        radius = self.wire_radius
+        gl.glPushMatrix()
+        #glLoadIdentity()
+        cyl = glu.gluNewQuadric()
+        #glTranslate(0, 0, self.offset)
+        #glRotatef(yangle, 1.0, 0.0, 0.0)
+        #glRotatef(xangle, 0.0, 1.0, 0.0)
+        gl.glTranslate(lm2.coords[0], lm2.coords[1], lm2.coords[2])
+        if (angle != 0):
+            gl.glRotate(angle, axis_rotation[0], axis_rotation[1], axis_rotation[2])
+        if nameidx > 0:
+            gl.glLoadName(nameidx)
+        glu.gluCylinder(cyl, radius, radius, length, 10, 10)
+        gl.glPopMatrix()
 
     def do_rorate(self):
         self.last_xangle += 1
