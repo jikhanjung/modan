@@ -78,6 +78,7 @@ class MdCanvasBase(glcanvas.GLCanvas):
         self.context = glcanvas.GLContext(self)
 
         # initial mouse position
+        self.is_panning = False
         self.lastx = self.x = 0
         self.lasty = self.y = 0
         self.last_xangle = 0
@@ -129,7 +130,7 @@ class MdCanvasBase(glcanvas.GLCanvas):
         self.lastx = self.x
         self.lasty = self.y
         self.ReleaseMouse()
-        #print self.x, self.y, self.lastx, self.lasty, self.last_xangle, self.last_yangle
+        print self.x, self.y, self.lastx, self.lasty, self.last_xangle, self.last_yangle
 
     def OnRightDown(self, evt):
         print "right down"
@@ -159,7 +160,7 @@ class MdCanvasBase(glcanvas.GLCanvas):
             #self.lastx, self.lasty = self.x, self.y
             self.x, self.y = evt.GetPosition()
             self.Refresh(False)
-        #print self.x, self.y, self.lastx, self.lasty, self.last_xangle, self.last_yangle
+        print self.x, self.y, self.lastx, self.lasty, self.last_xangle, self.last_yangle
         if evt.Dragging() and self.is_panning:
             self.panx, self.pany = evt.GetPosition()
             self.Refresh(False)
@@ -176,6 +177,7 @@ class MdCanvas(MdCanvasBase):
 
         self.Bind(wx.EVT_MOUSEWHEEL, self.OnWheel)
         self.Bind(wx.EVT_RIGHT_DOWN, self.OnRightDown)
+        self.Bind(wx.EVT_LEFT_UP, self.OnLeftUp)
         self.Bind(wx.EVT_RIGHT_UP, self.OnRightUp)
         self.Bind(wx.EVT_ENTER_WINDOW, self.OnMouseEnter)
 
@@ -190,6 +192,19 @@ class MdCanvas(MdCanvasBase):
         #print rotation
         self.zoom = self.zoom + self.zoom * 0.1 * rotation / ( ( rotation ** 2 ) ** 0.5 )
         #print "zoom:", self.zoom
+        self.OnDraw()
+        self.Refresh()
+    def OnLeftUp(self, evt):
+        MdCanvasBase.OnLeftUp(self,evt)
+        print self.last_xangle, self.last_yangle
+        y_angle = self.last_yangle
+        self.last_yangle = 0
+        x_angle = self.last_xangle
+        self.last_xangle = 0
+        y_angle = ( y_angle * math.pi ) / 180
+        self.mdobject.rotate_3d(y_angle, 'X')
+        x_angle = -1.0 * ( x_angle * math.pi ) / 180
+        self.mdobject.rotate_3d(x_angle, 'Y')
         self.OnDraw()
         self.Refresh()
 
@@ -214,6 +229,7 @@ class MdCanvas(MdCanvasBase):
         gl.glEnable(gl.GL_DEPTH_TEST)
         gl.glEnable(gl.GL_LIGHTING)
         gl.glEnable(gl.GL_LIGHT0)
+        glut.glutInit(sys.argv)
 
 
     def OnDraw_(self):
@@ -253,68 +269,40 @@ class MdCanvas(MdCanvasBase):
         glu.gluLookAt(0,0,lookat_zpos,0,0,1,0,1,0);
         #print "zpos:", lookat_zpos
 
+        ''' pan and rotate'''
         panning = 4.0
         panning_rate_x = panning * ( self.panx - self.lastpanx + self.lastpanposx ) / ( 1.0 * self.size.width )
         panning_rate_y = panning * ( self.lastpany - self.pany + self.lastpanposy ) / ( 1.0 * self.size.height )
         gl.glTranslate(( panning_rate_x ), panning_rate_y, 0)
 
-        xangle = (self.x - self.lastx ) + self.last_xangle
         yangle = self.y - self.lasty + self.last_yangle
+        xangle = (self.x - self.lastx ) + self.last_xangle
         #print "x y angle:", xangle, yangle
-        gl.glRotatef(yangle, 1.0, 0.0, 0.0)
         gl.glRotatef(xangle, 0.0, 1.0, 0.0)
+        gl.glRotatef(yangle, 1.0, 0.0, 0.0)
 
-        # draw six faces of a cube
-        gl.glBegin(gl.GL_QUADS)
-        gl.glNormal3f( 0.0, 0.0, 1.0)
-        gl.glVertex3f( 0.5, 0.5, 0.5)
-        gl.glVertex3f(-0.5, 0.5, 0.5)
-        gl.glVertex3f(-0.5,-0.5, 0.5)
-        gl.glVertex3f( 0.5,-0.5, 0.5)
+        self.DrawObject(self.mdobject)
 
-        gl.glNormal3f( 0.0, 0.0,-1.0)
-        gl.glVertex3f(-0.5,-0.5,-0.5)
-        gl.glVertex3f(-0.5, 0.5,-0.5)
-        gl.glVertex3f( 0.5, 0.5,-0.5)
-        gl.glVertex3f( 0.5,-0.5,-0.5)
-
-        gl.glNormal3f( 0.0, 1.0, 0.0)
-        gl.glVertex3f( 0.5, 0.5, 0.5)
-        gl.glVertex3f( 0.5, 0.5,-0.5)
-        gl.glVertex3f(-0.5, 0.5,-0.5)
-        gl.glVertex3f(-0.5, 0.5, 0.5)
-
-        gl.glNormal3f( 0.0,-1.0, 0.0)
-        gl.glVertex3f(-0.5,-0.5,-0.5)
-        gl.glVertex3f( 0.5,-0.5,-0.5)
-        gl.glVertex3f( 0.5,-0.5, 0.5)
-        gl.glVertex3f(-0.5,-0.5, 0.5)
-
-        gl.glNormal3f( 1.0, 0.0, 0.0)
-        gl.glVertex3f( 0.5, 0.5, 0.5)
-        gl.glVertex3f( 0.5,-0.5, 0.5)
-        gl.glVertex3f( 0.5,-0.5,-0.5)
-        gl.glVertex3f( 0.5, 0.5,-0.5)
-
-        gl.glNormal3f(-1.0, 0.0, 0.0)
-        gl.glVertex3f(-0.5,-0.5,-0.5)
-        gl.glVertex3f(-0.5,-0.5, 0.5)
-        gl.glVertex3f(-0.5, 0.5, 0.5)
-        gl.glVertex3f(-0.5, 0.5,-0.5)
-        gl.glEnd()
-
-        if False:
-            if self.size is None:
-                self.size = self.GetClientSize()
-            w, h = self.size
-            w = max(w, 1.0)
-            h = max(h, 1.0)
-            xScale = 180.0 / w
-            yScale = 180.0 / h
-            gl.glRotatef((self.y - self.lasty) * yScale, 1.0, 0.0, 0.0);
-            gl.glRotatef((self.x - self.lastx) * xScale, 0.0, 1.0, 0.0);
-
+        #gl.glEnd()
         self.SwapBuffers()
+
+    def DrawObject(self, object):
+        gl.glPushMatrix()
+
+        i = 1
+        for lm in object.landmark_list:
+            gl.glPushMatrix()
+            gl.glColor3f(1,0,0)
+            coords = [0, 0, 0]
+            for j in range(len(lm.coords)):
+                coords[j] = lm.coords[j]
+
+            gl.glTranslate(coords[0], coords[1], coords[2])
+            glut.glutSolidSphere(0.1, 20, 20)  #glutSolidCube( size )
+            gl.glPopMatrix()
+            i += 1
+
+        gl.glPopMatrix()
 
     def SetSingleObject(self,mo):
         print [lm.coords for lm in mo.landmark_list]
