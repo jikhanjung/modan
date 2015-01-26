@@ -79,6 +79,7 @@ class MdCanvasBase(glcanvas.GLCanvas):
 
         # initial mouse position
         self.is_panning = False
+        self.is_dragging = False
         self.lastx = self.x = 0
         self.lasty = self.y = 0
         self.last_xangle = 0
@@ -121,7 +122,8 @@ class MdCanvasBase(glcanvas.GLCanvas):
         print "leftdown"
         self.CaptureMouse()
         self.x, self.y = self.lastx, self.lasty = evt.GetPosition()
-        print self.x, self.y, self.lastx, self.lasty, self.last_xangle, self.last_yangle
+        #print self.x, self.y, self.lastx, self.lasty, self.last_xangle, self.last_yangle
+        self.is_dragging = True
 
     def OnLeftUp(self, evt):
         self.x, self.y = evt.GetPosition()
@@ -130,7 +132,8 @@ class MdCanvasBase(glcanvas.GLCanvas):
         self.lastx = self.x
         self.lasty = self.y
         self.ReleaseMouse()
-        print self.x, self.y, self.lastx, self.lasty, self.last_xangle, self.last_yangle
+        #print self.x, self.y, self.lastx, self.lasty, self.last_xangle, self.last_yangle
+        self.is_dragging = False
 
     def OnRightDown(self, evt):
         print "right down"
@@ -174,12 +177,14 @@ class MdCanvas(MdCanvasBase):
         self.show_wireframe = False
         self.show_index = False
         self.zoom = 1.0
+        self.init_control = False
 
         self.Bind(wx.EVT_MOUSEWHEEL, self.OnWheel)
         self.Bind(wx.EVT_RIGHT_DOWN, self.OnRightDown)
         self.Bind(wx.EVT_LEFT_UP, self.OnLeftUp)
         self.Bind(wx.EVT_RIGHT_UP, self.OnRightUp)
         self.Bind(wx.EVT_ENTER_WINDOW, self.OnMouseEnter)
+        self.rotation_timer = wx.Timer(self)
 
     def OnMouseEnter(self, event):
         print 'on mouse enter'
@@ -298,7 +303,7 @@ class MdCanvas(MdCanvasBase):
                 coords[j] = lm.coords[j]
 
             gl.glTranslate(coords[0], coords[1], coords[2])
-            glut.glutSolidSphere(0.1, 20, 20)  #glutSolidCube( size )
+            glut.glutSolidSphere(0.05, 20, 20)  #glutSolidCube( size )
             gl.glPopMatrix()
             i += 1
 
@@ -318,10 +323,53 @@ class MdCanvas(MdCanvasBase):
         print [lm.coords for lm in mo.landmark_list]
         self.mdobject = mo
 
-    def BeginAutoRotate(self):
-        return
+    def AutoRotate(self, event):
+        #print "auto rotate", self.is_dragging, self.auto_rotate
+        if self.init_control == False:
+            e = wx.SizeEvent(self.GetClientSize())
+            self.OnSize(e)
+            #self.SetSize( self.GetClientSize() )
+            #self.GetParent().SetSize( self.GetParent().GetClientSize() )
+            self.init_control = True
+        if self.auto_rotate == False:
+            #print "no rotate"
+            return
+        if self.is_dragging:
+            #print "dragging"
+            return
+        #return
+        self.do_rorate()
+
+    def do_rorate(self):
+        self.last_xangle += 1
+        self.OnDraw()
+
+    def BeginAutoRotate(self, interval=50):
+        if self.auto_rotate:
+            return
+        self.auto_rotate = True
+        #return
+        #print "begin auto rotate interval = ", interval
+        self.interval = interval
+        self.Bind(wx.EVT_TIMER, self.AutoRotate, self.rotation_timer)
+        self.rotation_timer.Start(self.interval)
+
+    #glRenderMode( GL_RENDER )
+    #self.auto_rotate = True
+    #self.rotation_timer = wx.Timer(self)
+    #self.Bind(wx.EVT_TIMER, self.AutoRotate, self.rotation_timer)
+    #self.rotation_timer.Start(interval)
+    #self.auto_rotate = True
+    #self.SetSize( (400,400) )
+    #self.OnDraw()
+
     def EndAutoRotate(self):
-        return
+        #return
+        #print "end auto rotate"
+        self.Unbind(wx.EVT_TIMER, self.rotation_timer)
+        #glRenderMode( GL_SELECT )
+        self.auto_rotate = False
+
     def ShowWireframe(self):
         return
     def HideWireframe(self):
