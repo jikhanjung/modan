@@ -119,7 +119,7 @@ class MdCanvasBase(glcanvas.GLCanvas):
         self.OnDraw()
 
     def OnLeftDown(self, evt):
-        print "leftdown"
+        #print "leftdown"
         self.CaptureMouse()
         self.x, self.y = self.lastx, self.lasty = evt.GetPosition()
         #print self.x, self.y, self.lastx, self.lasty, self.last_xangle, self.last_yangle
@@ -136,13 +136,13 @@ class MdCanvasBase(glcanvas.GLCanvas):
         self.is_dragging = False
 
     def OnRightDown(self, evt):
-        print "right down"
+        #print "right down"
         self.is_panning = True
         self.CaptureMouse()
         self.panx, self.pany = self.lastpanx, self.lastpany = evt.GetPosition()
 
     def OnRightUp(self, event):
-        print "right up"
+        #print "right up"
         self.is_panning = False
         x, y = event.GetPosition()
         self.panx, self.pany = x, y
@@ -163,7 +163,7 @@ class MdCanvasBase(glcanvas.GLCanvas):
             #self.lastx, self.lasty = self.x, self.y
             self.x, self.y = evt.GetPosition()
             self.Refresh(False)
-        print self.x, self.y, self.lastx, self.lasty, self.last_xangle, self.last_yangle
+        #print self.x, self.y, self.lastx, self.lasty, self.last_xangle, self.last_yangle
         if evt.Dragging() and self.is_panning:
             self.panx, self.pany = evt.GetPosition()
             self.Refresh(False)
@@ -185,9 +185,10 @@ class MdCanvas(MdCanvasBase):
         self.Bind(wx.EVT_RIGHT_UP, self.OnRightUp)
         self.Bind(wx.EVT_ENTER_WINDOW, self.OnMouseEnter)
         self.rotation_timer = wx.Timer(self)
+        self.wire_list = []
 
     def OnMouseEnter(self, event):
-        print 'on mouse enter'
+        #print 'on mouse enter'
         self.SetFocus()
 
     def OnWheel(self, event):
@@ -201,7 +202,10 @@ class MdCanvas(MdCanvasBase):
         self.Refresh()
     def OnLeftUp(self, evt):
         MdCanvasBase.OnLeftUp(self,evt)
-        print self.last_xangle, self.last_yangle
+        self.adjust_object_rotation()
+
+    def adjust_object_rotation(self):
+        #print self.last_xangle, self.last_yangle
         y_angle = self.last_yangle
         self.last_yangle = 0
         x_angle = self.last_xangle
@@ -288,7 +292,24 @@ class MdCanvas(MdCanvasBase):
 
         self.DrawObject(self.mdobject)
 
-        #gl.glEnd()
+        if len(self.wire_list)>0:
+
+            #gl.glDisable(gl.GL_LIGHTING)
+            nameidx = 1001
+            self.wirename = dict()
+            for wire in self.wire_list:
+                #gl.glColor3f( 0,0,1)
+                vfrom = int(wire[0])
+                vto = int(wire[1])
+                if vfrom > len(self.mdobject.landmark_list) or vto > len(self.mdobject.landmark_list):
+                    continue
+                self.wirename[nameidx] = str(vfrom) + "_" + str(vto)
+                coord1 = self.mdobject.landmark_list[vfrom-1].coords
+                coord2 = self.mdobject.landmark_list[vto-1].coords
+                self.DrawWire( coord1, coord2, nameidx)
+                nameidx += 1
+            #gl.glEnable(gl.GL_LIGHTING)
+
         self.SwapBuffers()
 
     def DrawObject(self, object):
@@ -306,11 +327,57 @@ class MdCanvas(MdCanvasBase):
             glut.glutSolidSphere(0.05, 20, 20)  #glutSolidCube( size )
             gl.glPopMatrix()
             i += 1
+        if self.show_index:
+            i = 0
+            gl.glDisable(gl.GL_LIGHTING)
+            gl.glColor3f(.5, .5, 1.0)
+            for lm in object.landmark_list:
+                i += 1
+                gl.glRasterPos3f(lm.coords[0], lm.coords[1] + 0.1 * 1.2, lm.coords[2])
+                for letter in list(str(i)):
+                    #print ord(letter)
+                    #print glut.GLUT_BITMAP_HELVETICA_12, type(glut.GLUT_BITMAP_HELVETICA_12).__name__
+                    #print int(ord(letter)), type(int(ord(letter))).__name__
+                    glut.glutBitmapCharacter(glut.GLUT_BITMAP_HELVETICA_12, ord(letter))
+                #c = 7
+                #glutBitmapCharacter(ctypes.c_int(c), ctypes.c_int(ord(letter)))
+            gl.glEnable(gl.GL_LIGHTING)
 
         gl.glPopMatrix()
 
+    def DrawWire(self, coord1, coord2, nameidx=-1):
+
+        axis_start = [0, 0, 1]
+        axis_end = [coord1[0] - coord2[0], coord1[1] - coord2[1], coord1[2] - coord2[2]]
+        angle = math.acos(axis_start[0] * axis_end[0] + axis_start[1] * axis_end[1] + axis_start[2] * axis_end[2] / (
+        (axis_start[0] ** 2 + axis_start[1] ** 2 + axis_start[2] ** 2) ** 0.5 * (
+        axis_end[0] ** 2 + axis_end[1] ** 2 + axis_end[2] ** 2) ** 0.5))
+        angle = angle * (180 / math.pi)
+        axis_rotation = [0, 0, 0]
+        axis_rotation[0] = axis_start[1] * axis_end[2] - axis_start[2] * axis_end[1]
+        axis_rotation[1] = axis_start[2] * axis_end[0] - axis_start[0] * axis_end[2]
+        axis_rotation[2] = axis_start[0] * axis_end[1] - axis_start[1] * axis_end[0]
+        if angle == 180:
+            axis_rotation = [1, 0, 0]
+
+        length = (axis_end[0] ** 2 + axis_end[1] ** 2 + axis_end[2] ** 2) ** 0.5
+        radius = 0.01
+        gl.glPushMatrix()
+        #glLoadIdentity()
+        cyl = glu.gluNewQuadric()
+        #glTranslate(0, 0, self.offset)
+        #glRotatef(yangle, 1.0, 0.0, 0.0)
+        #glRotatef(xangle, 0.0, 1.0, 0.0)
+        gl.glTranslate(coord2[0], coord2[1], coord2[2])
+        if (angle != 0):
+            gl.glRotate(angle, axis_rotation[0], axis_rotation[1], axis_rotation[2])
+        if nameidx > 0:
+            gl.glLoadName(nameidx)
+        glu.gluCylinder(cyl, radius, radius, length, 10, 10)
+        gl.glPopMatrix()
+
     def SetSingleObject(self,mo):
-        print [lm.coords for lm in mo.landmark_list]
+        #print [lm.coords for lm in mo.landmark_list]
         max_dist = -1
         for lm in mo.landmark_list:
             dist_sq = 0
@@ -320,8 +387,11 @@ class MdCanvas(MdCanvasBase):
             max_dist = max(max_dist, dist)
         for lm in mo.landmark_list:
             lm.coords = [ c / max_dist for c in lm.coords ]
-        print [lm.coords for lm in mo.landmark_list]
+        #print [lm.coords for lm in mo.landmark_list]
         self.mdobject = mo
+
+    def SetWireframe(self,wire_list):
+        self.wire_list = wire_list
 
     def AutoRotate(self, event):
         #print "auto rotate", self.is_dragging, self.auto_rotate
@@ -369,19 +439,39 @@ class MdCanvas(MdCanvasBase):
         self.Unbind(wx.EVT_TIMER, self.rotation_timer)
         #glRenderMode( GL_SELECT )
         self.auto_rotate = False
+        if self.mdobject:
+            self.adjust_object_rotation()
 
     def ShowWireframe(self):
-        return
+        self.show_wireframe = True
+        self.OnDraw()
+        self.Refresh()
+
     def HideWireframe(self):
-        return
+        self.show_wireframe = False
+        self.OnDraw()
+        self.Refresh()
+
     def ShowBaseline(self):
-        return
+        self.show_baseline = True
+        self.OnDraw()
+        self.Refresh()
+
     def HideBaseline(self):
-        return
+        self.show_baseline = False
+        self.OnDraw()
+        self.Refresh()
+
     def ShowIndex(self):
-        return
+        self.show_index = True
+        self.OnDraw()
+        self.Refresh()
+
     def HideIndex(self):
-        return
+        self.show_index = False
+        self.OnDraw()
+        self.Refresh()
+
     def ShowMeanshape(self):
         return
     def HideMeanshape(self):

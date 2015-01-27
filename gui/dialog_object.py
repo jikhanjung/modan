@@ -199,9 +199,9 @@ class ModanObjectDialog(wx.Dialog):
         '''
 
         # 3D viewer
-        print "threed viewer will be instatiated"
+        #print "threed viewer will be instatiated"
         self.ThreeDViewer = MdCanvas(panel)
-        print "threed viewer is now there"
+        #print "threed viewer is now there"
         #self.ThreeDViewer.on_size()
         self.chkAutoRotate = wx.CheckBox(panel, CONTROL_ID['ID_CHK_AUTO_ROTATE'], "Auto Rotate")
         self.chkShowIndex = wx.CheckBox(panel, CONTROL_ID['ID_CHK_SHOW_INDEX'], "Show Index")
@@ -296,14 +296,14 @@ class ModanObjectDialog(wx.Dialog):
         self.forms['landmark_list'].Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnLandmarkSelected, id=CONTROL_ID['ID_LM_GRID_CTRL'])
 
         ## Buttons
-        self.testButton1 = wx.Button(panel, CONTROL_ID['ID_TEST_BUTTON1'], 'Test1')
-        self.testButton2 = wx.Button(panel, CONTROL_ID['ID_TEST_BUTTON2'], 'Test2')
+        #self.testButton1 = wx.Button(panel, CONTROL_ID['ID_TEST_BUTTON1'], 'Test1')
+        #self.testButton2 = wx.Button(panel, CONTROL_ID['ID_TEST_BUTTON2'], 'Test2')
         self.saveButton = wx.Button(panel, CONTROL_ID['ID_SAVE_BUTTON'], 'Save')
         #self.showButton = wx.Button(panel, ID_SHOW_BUTTON, 'Show')
         self.deleteButton = wx.Button(panel, CONTROL_ID['ID_DELETE_BUTTON'], 'Delete')
         self.closeButton = wx.Button(panel, CONTROL_ID['ID_CLOSE_BUTTON'], 'Close')
-        self.Bind(wx.EVT_BUTTON, self.OnTest1, id=CONTROL_ID['ID_TEST_BUTTON1'])
-        self.Bind(wx.EVT_BUTTON, self.OnTest2, id=CONTROL_ID['ID_TEST_BUTTON2'])
+        #self.Bind(wx.EVT_BUTTON, self.OnTest1, id=CONTROL_ID['ID_TEST_BUTTON1'])
+        #self.Bind(wx.EVT_BUTTON, self.OnTest2, id=CONTROL_ID['ID_TEST_BUTTON2'])
         self.Bind(wx.EVT_BUTTON, self.OnSave, id=CONTROL_ID['ID_SAVE_BUTTON'])
         self.Bind(wx.EVT_BUTTON, self.OnDelete, id=CONTROL_ID['ID_DELETE_BUTTON'])
         self.Bind(wx.EVT_BUTTON, self.OnClose, id=CONTROL_ID['ID_CLOSE_BUTTON'])
@@ -334,7 +334,7 @@ class ModanObjectDialog(wx.Dialog):
         #print bright, contrast
 
     def set_dimension(self, dimension):
-        print "set dimension", dimension
+        #print "set dimension", dimension
 
         if dimension == 2:
             self.SetSize(wx.Size(1024, 600))
@@ -508,7 +508,7 @@ class ModanObjectDialog(wx.Dialog):
         y += rowHeight
         buttonWidth = 100
         x = self.GetSize().width / 2 - 2 * buttonWidth
-        buttons2 = ( self.testButton1, self.testButton2, self.saveButton, self.deleteButton, self.closeButton )
+        buttons2 = ( self.saveButton, self.deleteButton, self.closeButton )
         for i in range(len(buttons2)):
             buttons2[i].SetPosition(( x, y ))
             #print x, y
@@ -713,7 +713,7 @@ class ModanObjectDialog(wx.Dialog):
         #self.TwoDViewer.DrawToBuffer()
 
     def set_mdobject(self, mdobject):
-        print "set mdobject from dialog_object", mdobject
+        #print "set mdobject from dialog_object", mdobject
         #session = self.app.get_session()
         #print "session in setmodanobject:", session
         self.mdobject = mdobject
@@ -759,7 +759,7 @@ class ModanObjectDialog(wx.Dialog):
         if mdobject.dataset.dimension == 3:
             self.ThreeDViewer.SetSingleObject(mo)
             self.ThreeDViewer.baseline_point_list = self.dataset.baseline_point_list
-            self.ThreeDViewer.edge_list = self.dataset.edge_list
+            self.ThreeDViewer.SetWireframe(self.dataset.edge_list)
         else:
             self.TwoDViewer.DrawToBuffer()
 
